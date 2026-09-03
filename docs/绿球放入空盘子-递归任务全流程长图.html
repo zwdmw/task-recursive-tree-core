@@ -1,0 +1,3074 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1800, initial-scale=1">
+  <title>绿球放入空盘子：规范层与实例层递归任务全流程</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #5c6874;
+      --line: #c9d1da;
+      --paper: #ffffff;
+      --canvas: #e9edf1;
+      --navy: #20384b;
+      --navy-2: #2d4b61;
+      --input: #246bce;
+      --input-soft: #edf4ff;
+      --rule: #a76708;
+      --rule-soft: #fff4df;
+      --output: #2a7b50;
+      --output-soft: #eaf6ee;
+      --instance: #a43f68;
+      --instance-soft: #fbeaf1;
+      --teal: #0c7d81;
+      --teal-soft: #e8f7f6;
+      --danger: #b84b35;
+      --danger-soft: #fff0eb;
+      --purple: #6650a4;
+      --purple-soft: #f1edfb;
+      --gray-soft: #f5f7f9;
+      --green-ball: #43a95e;
+      --red-ball: #d45249;
+      --yellow-box: #e2a52b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1800px;
+      min-width: 1800px;
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif;
+      font-size: 22px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .poster {
+      width: 1800px;
+      background: var(--paper);
+    }
+
+    .inner {
+      width: 1580px;
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 860px;
+      padding: 78px 0 68px;
+      color: #fff;
+      background: var(--navy);
+      border-bottom: 12px solid var(--teal);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 8px 14px;
+      border: 1px solid #72aaa8;
+      border-radius: 4px;
+      color: #cfeeea;
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    h1 {
+      max-width: 1500px;
+      margin: 28px 0 18px;
+      font-size: 68px;
+      line-height: 1.15;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      max-width: 1470px;
+      margin: 0;
+      color: #d7e2e9;
+      font-size: 27px;
+      line-height: 1.65;
+    }
+
+    .hero-rule {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 42px;
+    }
+
+    .hero-rule > div {
+      min-height: 132px;
+      padding: 19px 20px;
+      color: var(--ink);
+      background: #fff;
+      border-top: 7px solid var(--input);
+      border-radius: 5px;
+    }
+
+    .hero-rule > div:nth-child(2) {
+      border-color: var(--rule);
+    }
+
+    .hero-rule > div:nth-child(3) {
+      border-color: var(--output);
+    }
+
+    .hero-rule > div:nth-child(4) {
+      border-color: var(--instance);
+    }
+
+    .hero-rule b,
+    .hero-rule span {
+      display: block;
+    }
+
+    .hero-rule b {
+      font-size: 25px;
+    }
+
+    .hero-rule span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-top: 36px;
+    }
+
+    .metric {
+      min-height: 96px;
+      padding: 15px 12px;
+      background: var(--navy-2);
+      border-top: 4px solid #78c5bc;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .metric strong,
+    .metric span {
+      display: block;
+    }
+
+    .metric strong {
+      font-size: 27px;
+      line-height: 1.2;
+    }
+
+    .metric span {
+      margin-top: 5px;
+      color: #d4dfe6;
+      font-size: 17px;
+    }
+
+    section {
+      position: relative;
+      padding: 68px 0 72px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section.alt {
+      background: #f7f9fb;
+    }
+
+    section.world {
+      background: #f5fbf7;
+      border-top: 8px solid var(--output);
+    }
+
+    section.repair {
+      background: #fff8fb;
+      border-top: 8px solid var(--instance);
+    }
+
+    section.runtime {
+      color: #fff;
+      background: #243845;
+      border-top: 8px solid var(--teal);
+    }
+
+    .kicker {
+      color: var(--teal);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .world .kicker {
+      color: var(--output);
+    }
+
+    .repair .kicker {
+      color: var(--instance);
+    }
+
+    .runtime .kicker {
+      color: #89d4cc;
+    }
+
+    h2 {
+      margin: 8px 0 12px;
+      font-size: 45px;
+      line-height: 1.25;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 25px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lead {
+      max-width: 1490px;
+      margin-bottom: 30px;
+      color: var(--muted);
+      font-size: 23px;
+    }
+
+    .runtime .lead {
+      color: #ccd9df;
+    }
+
+    code {
+      color: #174f94;
+      font-family: Consolas, "Noto Sans Mono", monospace;
+      font-size: 0.91em;
+      overflow-wrap: anywhere;
+    }
+
+    .runtime code {
+      color: #a9e7df;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .cell {
+      min-width: 0;
+      padding: 20px 19px 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--input);
+      border-radius: 5px;
+    }
+
+    .cell.rule {
+      border-top-color: var(--rule);
+    }
+
+    .cell.output {
+      border-top-color: var(--output);
+    }
+
+    .cell.instance {
+      border-top-color: var(--instance);
+    }
+
+    .runtime .cell {
+      color: var(--ink);
+    }
+
+    .cell-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    .cell-index {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      color: #fff;
+      background: var(--input);
+      border-radius: 50%;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .rule .cell-index {
+      background: var(--rule);
+    }
+
+    .output .cell-index {
+      background: var(--output);
+    }
+
+    .instance .cell-index {
+      background: var(--instance);
+    }
+
+    .cell-head b {
+      font-size: 23px;
+    }
+
+    .cell p,
+    .cell li {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .cell ul {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .cell li + li {
+      margin-top: 7px;
+    }
+
+    pre {
+      margin: 13px 0 0;
+      padding: 14px 15px;
+      color: #18384e;
+      background: #f2f5f8;
+      border: 1px solid #d7dee5;
+      border-radius: 4px;
+      font-family: Consolas, "Noto Sans Mono", monospace;
+      font-size: 15.5px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .runtime pre {
+      color: #d6ece9;
+      background: #1c2d38;
+      border-color: #456171;
+    }
+
+    .rule-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 13px;
+    }
+
+    .rule-item {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 9px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .rule-item i {
+      display: inline-grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      color: #fff;
+      background: var(--rule);
+      border-radius: 3px;
+      font-style: normal;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .owner-strip {
+      display: grid;
+      grid-template-columns: 0.78fr 1.12fr 1.1fr;
+      gap: 12px;
+      margin-top: 17px;
+    }
+
+    .owner-strip > div {
+      min-height: 78px;
+      padding: 14px 16px;
+      background: var(--gray-soft);
+      border-left: 6px solid var(--teal);
+      border-radius: 4px;
+      font-size: 17px;
+    }
+
+    .owner-strip b {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--teal);
+      font-size: 18px;
+    }
+
+    .runtime .owner-strip > div {
+      color: #d8e3e8;
+      background: #304b5a;
+      border-left-color: #7cc9c1;
+    }
+
+    .runtime .owner-strip b {
+      color: #a9e7df;
+    }
+
+    .callout {
+      margin: 22px 0;
+      padding: 18px 21px;
+      background: var(--teal-soft);
+      border-left: 8px solid var(--teal);
+      border-radius: 4px;
+      font-size: 20px;
+    }
+
+    .callout strong {
+      color: var(--teal);
+    }
+
+    .callout.warn {
+      background: var(--danger-soft);
+      border-left-color: var(--danger);
+    }
+
+    .callout.warn strong {
+      color: var(--danger);
+    }
+
+    .runtime .callout {
+      color: #dce8ed;
+      background: #304b5a;
+      border-left-color: #7cc9c1;
+    }
+
+    .runtime .callout strong {
+      color: #a9e7df;
+    }
+
+    .build-equation {
+      display: grid;
+      grid-template-columns: 178px minmax(0, 1fr);
+      margin: 0 0 28px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 8px solid var(--teal);
+      border-radius: 4px;
+    }
+
+    .build-equation > div {
+      min-width: 0;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .build-equation > div:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .build-equation .eq-label {
+      color: var(--teal);
+      background: #f1f7f7;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .build-equation .eq-label.instance-label {
+      color: var(--instance);
+      background: var(--instance-soft);
+    }
+
+    .build-equation .eq-body {
+      color: var(--muted);
+      font-size: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .build-equation .eq-body b {
+      color: var(--ink);
+    }
+
+    .build-equation .eq-arrow {
+      display: inline-block;
+      margin: 0 7px;
+      color: var(--teal);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .build-equation .instance-body {
+      color: #6f3650;
+    }
+
+    .runtime .build-equation {
+      color: #d8e3e8;
+      background: #304b5a;
+      border-color: #557080;
+      border-left-color: #7cc9c1;
+    }
+
+    .runtime .build-equation > div {
+      border-bottom-color: #557080;
+    }
+
+    .runtime .build-equation .eq-label {
+      color: #a9e7df;
+      background: #293f4c;
+    }
+
+    .runtime .build-equation .eq-label.instance-label {
+      color: #ffd1df;
+      background: #493547;
+    }
+
+    .runtime .build-equation .eq-body,
+    .runtime .build-equation .instance-body {
+      color: #d8e3e8;
+    }
+
+    .runtime .build-equation .eq-body b {
+      color: #fff;
+    }
+
+    .mapping-table {
+      display: grid;
+      grid-template-columns: 1.02fr 1.13fr 1.03fr 1.12fr;
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+    }
+
+    .mapping-table > div {
+      min-width: 0;
+      min-height: 72px;
+      padding: 13px 14px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 16.5px;
+      overflow-wrap: anywhere;
+    }
+
+    .mapping-table > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .mapping-table .head {
+      min-height: 58px;
+      color: #fff;
+      background: var(--navy);
+      font-weight: 900;
+    }
+
+    .mapping-table .source {
+      color: var(--ink);
+      background: var(--input-soft);
+      font-weight: 800;
+    }
+
+    .mapping-table .actual {
+      color: #6f3650;
+      background: var(--instance-soft);
+    }
+
+    .snapshot-flow {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr 42px 1fr 42px 1fr;
+      align-items: stretch;
+      margin-top: 20px;
+    }
+
+    .snapshot-step {
+      min-width: 0;
+      min-height: 238px;
+      padding: 17px 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--input);
+      border-radius: 4px;
+    }
+
+    .snapshot-step:nth-of-type(3) {
+      border-top-color: var(--rule);
+    }
+
+    .snapshot-step:nth-of-type(5) {
+      border-top-color: var(--output);
+    }
+
+    .snapshot-step:nth-of-type(7) {
+      border-top-color: var(--instance);
+    }
+
+    .snapshot-step b,
+    .snapshot-step span {
+      display: block;
+    }
+
+    .snapshot-step b {
+      font-size: 20px;
+    }
+
+    .snapshot-step span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .snapshot-arrow {
+      display: grid;
+      place-items: center;
+      color: var(--teal);
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .state-line {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 8px;
+      align-items: start;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .state-dot {
+      width: 12px;
+      height: 12px;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--input);
+    }
+
+    .state-dot.green {
+      background: var(--green-ball);
+    }
+
+    .state-dot.red {
+      background: var(--red-ball);
+    }
+
+    .state-dot.yellow {
+      background: var(--yellow-box);
+    }
+
+    .state-dot.gray {
+      background: #72808a;
+    }
+
+    .subhead {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 34px 0 17px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+    }
+
+    .subhead span {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: 4px;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .subhead b {
+      font-size: 27px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 11px;
+      margin-top: 24px;
+    }
+
+    .pipe {
+      position: relative;
+      min-height: 158px;
+      padding: 16px 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-bottom: 6px solid var(--teal);
+      border-radius: 4px;
+    }
+
+    .pipe:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 57px;
+      right: -18px;
+      z-index: 2;
+      width: 25px;
+      color: var(--teal);
+      background: #fff;
+      font-size: 27px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .pipe b,
+    .pipe span {
+      display: block;
+    }
+
+    .pipe b {
+      font-size: 19px;
+    }
+
+    .pipe span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 15.5px;
+    }
+
+    .system-chain {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .chain-item {
+      min-height: 118px;
+      padding: 15px 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--input);
+      border-radius: 4px;
+    }
+
+    .chain-item:nth-child(4n + 2) {
+      border-left-color: var(--rule);
+    }
+
+    .chain-item:nth-child(4n + 3) {
+      border-left-color: var(--output);
+    }
+
+    .chain-item:nth-child(4n + 4) {
+      border-left-color: var(--instance);
+    }
+
+    .chain-item b,
+    .chain-item span {
+      display: block;
+    }
+
+    .chain-item b {
+      font-size: 20px;
+    }
+
+    .chain-item span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 24px;
+    }
+
+    .compare > div {
+      padding: 21px 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--input);
+      border-radius: 5px;
+    }
+
+    .compare > div:last-child {
+      border-top-color: var(--output);
+    }
+
+    .compare h3 {
+      font-size: 27px;
+    }
+
+    .compare p,
+    .compare li {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .compare ul {
+      margin: 12px 0 0;
+      padding-left: 23px;
+    }
+
+    .schema-table {
+      display: grid;
+      grid-template-columns: 230px 1fr 1fr;
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      background: #fff;
+    }
+
+    .schema-table > div {
+      min-height: 62px;
+      padding: 12px 14px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .schema-table > div:nth-child(3n) {
+      border-right: 0;
+    }
+
+    .schema-table .head {
+      color: #fff;
+      background: var(--navy);
+      font-weight: 900;
+    }
+
+    .schema-table .key {
+      background: #f2f5f7;
+      font-weight: 800;
+    }
+
+    .tree {
+      margin-top: 24px;
+      padding: 24px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+
+    .tree-root,
+    .tree-node {
+      padding: 16px 18px;
+      background: var(--input-soft);
+      border: 2px solid var(--input);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .tree-root b,
+    .tree-root span,
+    .tree-node b,
+    .tree-node span {
+      display: block;
+    }
+
+    .tree-root b,
+    .tree-node b {
+      font-size: 21px;
+    }
+
+    .tree-root span,
+    .tree-node span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .tree-line {
+      width: 4px;
+      height: 30px;
+      margin: 0 auto;
+      background: var(--line);
+    }
+
+    .repair-frame {
+      padding: 20px;
+      border: 3px dashed var(--instance);
+      border-radius: 5px;
+      background: #fffafd;
+    }
+
+    .repair-frame.nested {
+      margin-top: 20px;
+      border-color: var(--rule);
+      background: #fffcf6;
+    }
+
+    .repair-caption {
+      margin-bottom: 12px;
+      color: var(--instance);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .nested .repair-caption {
+      color: var(--rule);
+    }
+
+    .tree-children {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .tree-child {
+      min-height: 94px;
+      padding: 13px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .tree-child b,
+    .tree-child span {
+      display: block;
+    }
+
+    .tree-child b {
+      font-size: 18px;
+    }
+
+    .tree-child span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .return-row {
+      display: grid;
+      grid-template-columns: 1fr 45px 1fr 45px 1fr;
+      align-items: center;
+      margin-top: 18px;
+      padding: 14px;
+      color: #1f6943;
+      background: var(--output-soft);
+      border: 1px solid #acd0b8;
+      border-radius: 4px;
+      font-size: 17px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .return-row i {
+      font-style: normal;
+      font-size: 27px;
+    }
+
+    .gate-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .gate {
+      min-height: 126px;
+      padding: 15px 16px;
+      background: var(--rule-soft);
+      border: 1px solid #e6c48c;
+      border-left: 6px solid var(--rule);
+      border-radius: 4px;
+    }
+
+    .gate b,
+    .gate span {
+      display: block;
+    }
+
+    .gate b {
+      font-size: 19px;
+    }
+
+    .gate span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .revision-table {
+      display: grid;
+      grid-template-columns: 120px 230px 1.15fr 1fr;
+      margin-top: 22px;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      background: #fff;
+    }
+
+    .revision-table > div {
+      min-height: 63px;
+      padding: 12px 13px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 16.5px;
+    }
+
+    .revision-table > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .revision-table .head {
+      color: #fff;
+      background: var(--navy);
+      font-weight: 900;
+    }
+
+    .revision-table .rev {
+      color: var(--output);
+      background: #f0f7f2;
+      font-weight: 900;
+    }
+
+    .result-axis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .axis {
+      padding: 17px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--danger);
+      border-radius: 4px;
+    }
+
+    .axis:nth-child(2) {
+      border-top-color: var(--output);
+    }
+
+    .axis:nth-child(3) {
+      border-top-color: var(--teal);
+    }
+
+    .axis b,
+    .axis span {
+      display: block;
+    }
+
+    .axis b {
+      font-size: 20px;
+    }
+
+    .axis span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .runtime .axis {
+      color: var(--ink);
+    }
+
+    .world-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .world-figure {
+      padding: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+
+    .world-figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .checks {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 11px;
+      align-items: start;
+      min-height: 76px;
+      padding: 13px 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--output);
+      border-radius: 4px;
+    }
+
+    .check i {
+      display: inline-grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      color: #fff;
+      background: var(--output);
+      border-radius: 50%;
+      font-style: normal;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .check b,
+    .check span {
+      display: block;
+    }
+
+    .check b {
+      font-size: 19px;
+    }
+
+    .check span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .source-note {
+      margin-top: 24px;
+      padding: 18px 20px;
+      color: var(--muted);
+      background: #f3f6f8;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    footer {
+      padding: 45px 0 54px;
+      color: #d2dde4;
+      background: #172935;
+      border-top: 8px solid var(--teal);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 32px;
+    }
+
+    footer h3 {
+      color: #fff;
+      font-size: 24px;
+    }
+
+    footer p {
+      margin-top: 7px;
+      font-size: 16px;
+    }
+
+    footer code {
+      color: #a9e7df;
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <header>
+      <div class="inner">
+        <span class="eyebrow">TASK RECURSIVE TREE · 规范层 + 实例层 · 中文详解</span>
+        <h1>把绿球放进空盘子：<br>系统如何逐层构建、确认、修复并更新世界</h1>
+        <p class="subtitle">
+          这张图不只讲“发生了什么”，还讲每个中间对象究竟怎样产生。
+          从场景元数据、世界快照、任务程序、实体绑定、根节点、结构化诊断、修复图增量、
+          规划工件、动作事务，到观察回写与最终验证，每一层都同时给出通用规范和本次真实运行值。
+        </p>
+
+        <div class="hero-rule">
+          <div><b>1 · 原始输入</b><span>谁提供数据、允许哪些字段、哪些信息仍不可信</span></div>
+          <div><b>2 · 规范化 / 构建规则</b><span>字段如何补齐、校验、去歧义、版本化和拒绝</span></div>
+          <div><b>3 · 标准产物</b><span>下游真正消费的稳定 schema、对象结构和不变量</span></div>
+          <div><b>4 · 本次实例</b><span>绿球任务中实际 ID、revision、谓词、工件和事务值</span></div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><strong>4 分 32 秒</strong><span>完整成功运行</span></div>
+          <div class="metric"><strong>470</strong><span>内核 tick</span></div>
+          <div class="metric"><strong>75</strong><span>最终节点数</span></div>
+          <div class="metric"><strong>2 层</strong><span>递归修复深度</span></div>
+          <div class="metric"><strong>14 次</strong><span>物理动作派发</span></div>
+          <div class="metric"><strong>rev 1 → 74</strong><span>运行时世界版本</span></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="kicker">00 · 先看完整对象链</div>
+        <h2>系统不是一条“抓取 → 放置”脚本，而是十二种标准对象的转换链</h2>
+        <p class="lead">
+          每个箭头都表示一次明确的构建或验证边界。上游只能交付约定结构，下游不能越过对象所有者去读取私有状态。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">统一生成语法</div>
+          <div class="eq-body">
+            <b>原始来源</b><span class="eq-arrow">→</span>
+            <b>规范化器 / 构建器</b><span class="eq-arrow">→</span>
+            <b>schema 校验 + 不变量</b><span class="eq-arrow">→</span>
+            <b>版本化标准对象</b><span class="eq-arrow">→</span>
+            <b>下游消费者</b>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>catalog.apple_3.color=green</code><span class="eq-arrow">→</span>
+            <code>EntityQuery(color=green)</code><span class="eq-arrow">→</span>
+            <code>BindingArtifact=[apple_3]</code><span class="eq-arrow">→</span>
+            <code>TaskNodeSpec(manipuland=apple_3)</code><span class="eq-arrow">→</span>
+            <code>txn_87622be3</code><span class="eq-arrow">→</span>
+            <code>scene_000142@rev74</code>
+          </div>
+        </div>
+
+        <div class="system-chain">
+          <div class="chain-item"><b>① 场景事实</b><span>可信目录元数据 + MuJoCo 实时位姿、支撑、夹爪和安全状态</span></div>
+          <div class="chain-item"><b>② 场景能力快照</b><span><code>scene_capability_snapshot/1.0</code>，给翻译与语义绑定使用</span></div>
+          <div class="chain-item"><b>③ 运行时世界快照</b><span><code>robot.world_state/1.0</code>，事务一致性读取切面</span></div>
+          <div class="chain-item"><b>④ TaskProgram</b><span>自然语言被改写为动作、查询、约束和目标公式</span></div>
+
+          <div class="chain-item"><b>⑤ BindingArtifact</b><span>语义查询落到稳定实体 ID，并带候选、证据与读集</span></div>
+          <div class="chain-item"><b>⑥ TaskNodeSpec</b><span>编译后的可执行根节点，含前置条件、目标和重试策略</span></div>
+          <div class="chain-item"><b>⑦ Diagnostic</b><span>三值谓词不满足时生成的结构化失败说明</span></div>
+          <div class="chain-item"><b>⑧ RepairProposal</b><span>修复理由、GraphDelta、工件失效和持久义务</span></div>
+
+          <div class="chain-item"><b>⑨ Planning Artifact</b><span>不可变布局、路径、姿态及记录级依赖版本</span></div>
+          <div class="chain-item"><b>⑩ Action + Transaction</b><span>类型化请求、读写集、资源租约、幂等派发</span></div>
+          <div class="chain-item"><b>⑪ Effects + Reconciliation</b><span>观察证据提交世界；结果未知时先对账再继续</span></div>
+          <div class="chain-item"><b>⑫ Verification Result</b><span>独立读取最终快照，检查主目标、修复义务和事务闭合</span></div>
+        </div>
+
+        <div class="callout">
+          <strong>阅读方式：</strong>
+          每一节先横向读四栏，理解“输入怎样变成标准对象”；再纵向追踪粉色的“本次实例”，就能把通用机制与这次绿球运行一一对应。
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="kicker">01 · 两种快照先分清</div>
+        <h2>“场景能力快照”与“运行时世界快照”不是同一个对象</h2>
+        <p class="lead">
+          前者是面向任务理解的、坐标弱化的能力投影；后者是面向执行、事务和验证的版本化事实切面。
+          旧图把它们合并成“世界快照”，导致来源、字段和用途都不清楚。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>catalog + support_of()</code><span class="eq-arrow">→</span>
+            <code>build_scene_capability_snapshot()</code><span class="eq-arrow">→</span>
+            <code>scene_capability_snapshot/1.0</code>；
+            <code>committed records</code><span class="eq-arrow">→</span>
+            <code>WorldStateService.freeze_snapshot()</code><span class="eq-arrow">→</span>
+            <code>robot.world_state/1.0</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>apple_1 on plate_1 + apple_3 green + box_1 movable</code>
+            <span class="eq-arrow">→</span>
+            <code>scene_snapshot_c7026126abbc702e@rev1</code>
+            <span class="eq-arrow">→</span>
+            翻译 / 绑定；
+            <code>WorldState records rev1→74</code>
+            <span class="eq-arrow">→</span>
+            <code>scene_000142</code>
+            <span class="eq-arrow">→</span>
+            最终验证
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入</b></div>
+            <p><b>能力投影：</b>感知目录中的类别、属性、affordance、movable，以及实时支撑关系。</p>
+            <p style="margin-top:10px;"><b>运行时快照：</b>已经提交到 WorldStateService 的实体、关系、任务、末端、安全和证据记录。</p>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>规范化规则</b></div>
+            <ul>
+              <li>能力投影不输出控制轨迹，只输出可理解的实体、区域、关系和公开任务能力。</li>
+              <li>运行时快照不重新推理；它冻结当前已提交记录，形成一致读取切面。</li>
+              <li>两者都带版本引用，编译前必须检查引用是否仍匹配当前场景。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准产物</b></div>
+            <pre>scene_capability_snapshot/1.0
+├─ snapshot_ref
+├─ world_revision
+├─ entities / relations
+├─ capabilities
+└─ policies
+
+robot.world_state/1.0
+├─ schema / snapshot
+├─ entities / relations / tasks
+├─ end_effectors / safety
+└─ evidence</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次实例</b></div>
+            <pre>能力快照:
+snapshot_ref =
+  scene_snapshot_c7026126abbc702e
+world_revision = 1
+
+最终运行时快照:
+snapshot.id = scene_000142
+revision = 74
+consistency = transactional_cut</pre>
+          </div>
+        </div>
+
+        <div class="compare">
+          <div>
+            <h3>能力快照回答什么？</h3>
+            <ul>
+              <li>“哪些实体是苹果、盘子、桌面或地面？”</li>
+              <li>“哪些对象可抓、可推、可移动？”</li>
+              <li>“盘子内部、桌面支撑区、地面支撑区是否可用？”</li>
+              <li>“系统公开支持哪些任务类型、关系和参数？”</li>
+            </ul>
+          </div>
+          <div>
+            <h3>运行时快照回答什么？</h3>
+            <ul>
+              <li>“某个实体记录当前 revision 是多少？”</li>
+              <li>“已确认或已反驳的谓词关系是什么？”</li>
+              <li>“夹爪是否持有对象、事务读集是否仍新鲜？”</li>
+              <li>“在同一事务切面上，目标公式现在真、假还是 unknown？”</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="owner-strip">
+          <div><b>能力快照所有者</b><code>build_scene_capability_snapshot()</code></div>
+          <div><b>运行时快照所有者</b><code>WorldStateService.freeze_snapshot()</code></div>
+          <div><b>关键禁止</b>TaskProgram 不能拿旧的 <code>snapshot_ref</code> 或旧世界版本继续编译。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="world">
+      <div class="inner">
+        <div class="kicker">02 · 世界快照如何规范化构建</div>
+        <h2>先把原始场景变成标准记录，再冻结成事务一致的世界切面</h2>
+        <p class="lead">
+          世界快照不是摄像头帧，也不是任意 JSON 拼接。它先经过实体、能力、关系、末端状态、证据和版本规则的规范化，
+          只有提交后的权威记录才能进入 <code>robot.world_state/1.0</code>。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>可信目录 + 实时观测 + 动作效果</code><span class="eq-arrow">→</span>
+            <code>Entity / Relation / EndEffectorState</code> 规范化
+            <span class="eq-arrow">→</span>
+            <code>commit_*</code> 写入权威存储
+            <span class="eq-arrow">→</span>
+            <code>freeze_snapshot()</code>
+            <span class="eq-arrow">→</span>
+            <code>robot.world_state/1.0</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>apple_3 / plate_1 / apple_1 / box_1 + gripper=empty</code>
+            <span class="eq-arrow">→</span>
+            六个 Entity 与初始支撑事实
+            <span class="eq-arrow">→</span>
+            14 次物理派发产生的 confirmed / refuted / unknown effects
+            <span class="eq-arrow">→</span>
+            <code>world rev 74, frame graph rev 15</code>
+            <span class="eq-arrow">→</span>
+            <code>scene_000142</code>
+          </div>
+        </div>
+
+        <div class="subhead"><span>2A</span><b>原始场景 → Entity / Relation / EndEffectorState</b></div>
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <ul>
+              <li>可信元数据：<code>body / geom / kind / category / attributes / affordances / movable / geometry</code></li>
+              <li>实时观测：实体 pose、quat、support_of、gripper holding、碰撞与安全状态</li>
+              <li>动作效果：predicate、participants、state、required、evidence_refs</li>
+            </ul>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>规范化规则</b></div>
+            <div class="rule-list">
+              <div class="rule-item"><i>1</i><span>实体 ID 只能由系统分配或接受可信目录中的稳定 ID；模型不能自造 ID。</span></div>
+              <div class="rule-item"><i>2</i><span>能力统一为 <code>available / unavailable / unknown</code>；显式能力优先于旧 affordance。</span></div>
+              <div class="rule-item"><i>3</i><span>缺省 freshness：可移动对象用 TTL；固定 workspace 用 <code>scene_epoch</code>。</span></div>
+              <div class="rule-item"><i>4</i><span>谓词参与者使用规范角色，如 <code>subject / region_owner / object / support</code>。</span></div>
+              <div class="rule-item"><i>5</i><span>只有 effect 为 confirmed 或 refuted 才提交关系；unknown 不写成事实。</span></div>
+              <div class="rule-item"><i>6</i><span>支撑关系冲突时，保留新确认 owner，并把旧支撑关系提交为 false。</span></div>
+            </div>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准记录结构</b></div>
+            <pre>Entity {
+  id, revision, kind,
+  semantic.labels,
+  semantic.attributes,
+  pose_ref, geometry_ref,
+  affordances,
+  interaction_capabilities,
+  tracking_state,
+  freshness_policy,
+  observed_at, valid_until
+}
+
+Relation {
+  id, revision, predicate,
+  participants, value,
+  confidence, evidence_refs,
+  observed_at, valid_until
+}
+
+EndEffectorState {
+  id, revision, occupancy,
+  held_entity_id,
+  attachment_state,
+  source, evidence_refs
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次实体实例</b></div>
+            <pre>apple_3:
+  label=apple
+  color=green, shape=sphere
+  grasp=available, push=available
+  freshness=ttl
+
+plate_1:
+  label=plate, shape=disc
+  grasp=available, push=unavailable
+
+box_1:
+  color=yellow, shape=box
+  movable=true
+  grasp=available, push=available
+
+table_1 / floor_1:
+  kind=workspace
+  freshness=scene_epoch</pre>
+          </div>
+        </div>
+
+        <div class="pipeline">
+          <div class="pipe"><b>目录元数据</b><span>类别、属性、几何、affordance、movable</span></div>
+          <div class="pipe"><b>能力三值化</b><span>grasp / push 被规范成明确状态</span></div>
+          <div class="pipe"><b>稳定实体记录</b><span>补齐 pose_ref、geometry_ref、freshness</span></div>
+          <div class="pipe"><b>谓词角色规范化</b><span>参与者按 ontology 的 canonical role 写入</span></div>
+          <div class="pipe"><b>证据判定</b><span>confirmed / refuted 可提交；unknown 留在结果层</span></div>
+          <div class="pipe"><b>记录与全局版本提升</b><span>记录 revision 与 world revision 同步推进</span></div>
+        </div>
+
+        <div class="subhead"><span>2B</span><b>字段级来源映射：每个标准字段究竟从哪里来</b></div>
+        <div class="mapping-table">
+          <div class="head">原始字段 / 观测</div>
+          <div class="head">规范化动作</div>
+          <div class="head">进入的标准字段</div>
+          <div class="head">本任务实际值</div>
+
+          <div class="source"><code>catalog[apple_3].category / attributes</code></div>
+          <div>可信目录保留稳定 ID；attributes 按键排序复制；标签写成带 confidence 的语义标签。</div>
+          <div><code>Entity.id / semantic.labels / semantic.attributes</code></div>
+          <div class="actual"><code>id=apple_3</code>；<code>label.value=apple, confidence=1.0</code>；<code>color=green, shape=sphere</code>；最终 entity revision=<code>8</code>。</div>
+
+          <div class="source"><code>affordances=[graspable,pushable]</code></div>
+          <div><code>normalize_interaction_capabilities()</code> 把布尔、别名和旧 affordance 统一成三值；显式值优先。</div>
+          <div><code>Entity.interaction_capabilities.grasp / push</code></div>
+          <div class="actual"><code>apple_3: grasp=available, push=available</code>；<code>plate_1: push=unavailable</code>。</div>
+
+          <div class="source"><code>plate_1.category=plate</code> 且包含 <code>support_region</code></div>
+          <div><code>_support_region()</code> 按类别选择 selector、relation、capacity 和 frame；盘子 / 箱体使用 interior。</div>
+          <div><code>semantic_regions[].region_ref / selector / allowed_relations</code></div>
+          <div class="actual"><code>region_ref=plate_1/interior</code>；<code>selector=interior</code>；允许 <code>inside_support_region</code>。</div>
+
+          <div class="source"><code>support_of(apple_1)=plate_1</code></div>
+          <div>先构建 <code>direct_by_owner</code>，再递归展开嵌套 occupant；同一结果同时形成关系投影和区域占用状态。</div>
+          <div><code>relations[]</code> 与 <code>semantic_regions[].direct_occupants / occupied</code></div>
+          <div class="actual"><code>plate_1/interior.direct_occupants=[apple_1]</code>；<code>recursive_occupants=[apple_1]</code>；<code>occupied=true</code>。</div>
+
+          <div class="source"><code>kind=workspace, movable=false</code></div>
+          <div><code>entity_freshness_policy()</code> 选择 <code>scene_epoch</code>；其他动态对象默认使用 TTL。</div>
+          <div><code>Entity.freshness_policy / observed_at / valid_until</code></div>
+          <div class="actual"><code>table_1, floor_1 → scene_epoch</code>；苹果、盘子和箱体使用 <code>ttl</code>。</div>
+
+          <div class="source">排序后的能力快照 payload</div>
+          <div>稳定 JSON 序列化后做 SHA-256，取前 16 位；坐标不进入该 payload，因此同一语义场景产生稳定引用。</div>
+          <div><code>scene_capability_snapshot.snapshot_ref</code></div>
+          <div class="actual"><code>scene_snapshot_c7026126abbc702e</code>；<code>world_revision=1</code>。</div>
+        </div>
+
+        <div class="subhead"><span>2C</span><b>末端状态规范化：先消除内部矛盾，再进入世界</b></div>
+        <div class="schema-table">
+          <div class="head">输入组合</div><div class="head">规范化结果</div><div class="head">原因</div>
+          <div class="key"><code>occupancy=empty</code></div><div><code>held_entity_id=null</code>；<code>attachment_state=none</code></div><div>空夹爪不能同时声称持有对象。</div>
+          <div class="key"><code>holding</code> 但无对象 ID</div><div><code>occupancy=unknown</code>；<code>attachment_state=unknown</code></div><div>信息自相矛盾，不能猜测为 holding。</div>
+          <div class="key"><code>holding</code> 且 attachment=none</div><div>attachment 改为 <code>unknown</code></div><div>持有与“无附着”冲突。</div>
+          <div class="key">语义三元组未变化</div><div>只刷新 observed_at / valid_until，不提升 semantic revision</div><div>时间戳刷新不应让工件无谓失效。</div>
+          <div class="key">本次最终观测</div><div><code>occupancy=empty</code>，<code>held_entity_id=null</code>，<code>attachment_state=none</code></div><div>gripper revision=7，来源为连续会话状态。</div>
+        </div>
+
+        <div class="subhead"><span>2D</span><b>已提交记录 → robot.world_state/1.0</b></div>
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>冻结输入</b></div>
+            <p>WorldStateService 当前持有的六类权威存储：</p>
+            <pre>entities
+relations
+tasks
+end_effectors
+safety
+evidence</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>冻结规则</b></div>
+            <ul>
+              <li><code>snapshot_counter += 1</code>，生成不可复用的 scene ID。</li>
+              <li>记录同一时刻的全局 revision 与 frame graph revision。</li>
+              <li><code>consistency=transactional_cut</code>，表示同一事务读取切面。</li>
+              <li>schema 同时声明工具、谓词 ontology 与 policy 版本。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准输出</b></div>
+            <pre>{
+  "schema": {
+    "name": "robot.world_state",
+    "version": "1.0",
+    "tool_catalog_version": "...",
+    "ontology_version": "...",
+    "policy_version": "..."
+  },
+  "snapshot": {
+    "id": "scene_XXXXXX",
+    "revision": N,
+    "captured_at": "...",
+    "consistency": "transactional_cut",
+    "frame_graph_revision": M
+  },
+  "entities": [...],
+  "relations": [...],
+  "tasks": [...],
+  "end_effectors": [...],
+  "safety": {...},
+  "evidence": [...]
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次最终实例</b></div>
+            <pre>snapshot.id = scene_000142
+revision = 74
+captured_at =
+  2026-09-01T07:31:51
+frame_graph_revision = 15
+
+entities = 6
+relations = 21
+tasks = 1
+end_effectors = 1
+evidence = 3
+safety.state = safe</pre>
+          </div>
+        </div>
+
+        <div class="subhead"><span>2E</span><b>本任务的完整快照实例化链：初始事实如何一路变成最终快照</b></div>
+        <div class="snapshot-flow">
+          <div class="snapshot-step">
+            <b>① 初始场景事实 · world rev 1</b>
+            <div class="state-line"><i class="state-dot red"></i><span><code>apple_1</code> 位于 <code>plate_1</code> 内，盘子并不为空。</span></div>
+            <div class="state-line"><i class="state-dot green"></i><span><code>apple_3</code> 位于 <code>floor_1</code>，属性 <code>color=green</code>。</span></div>
+            <div class="state-line"><i class="state-dot yellow"></i><span><code>box_1</code> 位于 <code>floor_1</code> 的狭窄通道中，之后成为路线 blocker。</span></div>
+            <div class="state-line"><i class="state-dot gray"></i><span>机器人基座 <code>[0.60,-1.55,1.5708]</code>；夹爪 <code>empty / null / none</code>，revision 1。</span></div>
+          </div>
+          <div class="snapshot-arrow">→</div>
+          <div class="snapshot-step">
+            <b>② 能力投影 · 给翻译与绑定</b>
+            <span><code>build_scene_capability_snapshot()</code> 读取目录和支撑关系，但不输出控制坐标。</span>
+            <span><code>plate_1/interior.occupied=true</code></span>
+            <span><code>direct_occupants=[apple_1]</code></span>
+            <span><code>apple_3.grasp=available</code></span>
+            <span><code>snapshot_ref=scene_snapshot_c7026126abbc702e</code></span>
+          </div>
+          <div class="snapshot-arrow">→</div>
+          <div class="snapshot-step">
+            <b>③ 权威记录提交循环 · rev 1 → 74</b>
+            <span>绑定候选先物化为 Entity；动作效果再通过 <code>_commit_effects()</code> 写成 Relation、Entity revision 与 EndEffectorState。</span>
+            <span><code>box_1 → table_1</code>；<code>apple_1 → floor_1</code>；<code>apple_3 → plate_1</code>。</span>
+            <span>unknown effect 不写事实；confirmed / refuted 分别写 true / false。</span>
+            <span>最终 <code>apple_3 rev8</code>、<code>apple_1 rev8</code>、<code>box_1 rev7</code>、gripper rev7。</span>
+          </div>
+          <div class="snapshot-arrow">→</div>
+          <div class="snapshot-step">
+            <b>④ 冻结最终事务切面</b>
+            <span><code>freeze_snapshot()</code> 只复制已提交记录，并同时记录 schema 与版本。</span>
+            <span><code>snapshot.id=scene_000142</code></span>
+            <span><code>revision=74</code>；<code>frame_graph_revision=15</code></span>
+            <span><code>6 entities / 21 relations / 1 task / 1 end effector / 3 evidence</code></span>
+            <span><code>consistency=transactional_cut</code></span>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>最重要的不变量：</strong>
+          “快照已冻结”不等于“所有旧工件都失效”。工件是否 stale，要比较它声明的记录级读集，例如
+          <code>record/entity/apple_3:5</code>、<code>record/robot/robot_1/gripper:6</code>，
+          只有相关记录版本变化才拒绝执行。
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="kicker">03 · 自然语言如何规范化为 TaskProgram</div>
+        <h2>“把绿色苹果放在空盘子里”先变成可校验语义程序，而不是直接变成控制动作</h2>
+        <p class="lead">
+          TaskProgram 负责表达意图，不包含路线、关节轨迹或机器人私有状态。
+          它必须引用当前场景能力快照，并把“空盘子”显式保存为可编译约束。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>instruction + scene capability snapshot</code>
+            <span class="eq-arrow">→</span>
+            <code>translate_*_task_program()</code>
+            <span class="eq-arrow">→</span>
+            <code>normalize_program()</code>
+            <span class="eq-arrow">→</span>
+            <code>validate_task_program()</code>
+            <span class="eq-arrow">→</span>
+            <code>TaskProgram</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            “绿色苹果”<span class="eq-arrow">→</span>
+            <code>object.category=apple, attributes.color=green</code>；
+            “空盘子”<span class="eq-arrow">→</span>
+            <code>destination.category=plate + requires_empty=true</code>；
+            HTTP 503<span class="eq-arrow">→</span>
+            <code>rule_task_program/1.0</code>
+            <span class="eq-arrow">→</span>
+            <code>task_program_rule_fallback_38a52c21d1b6</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <ul>
+              <li>用户原句</li>
+              <li>当前 <code>scene_capability_snapshot/1.0</code></li>
+              <li>公开 task_type、relation、parameter 词表</li>
+              <li>模型输出或规则回退输出</li>
+            </ul>
+            <pre>用户:
+"把绿色苹果放在空盘子里。"</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>规范化规则</b></div>
+            <ul>
+              <li>根对象必须是合法 <code>kind=task</code>，动作类型必须在公开能力表内。</li>
+              <li>“绿色苹果”变成实体查询，而不是提前编造 <code>apple_3</code>。</li>
+              <li>“空盘子”保留为 <code>requires_empty=true</code>。</li>
+              <li>目标公式必须使用 ontology 中的 predicate 与规范 participant role。</li>
+              <li>保存场景快照引用和源世界版本，供编译时拒绝陈旧程序。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准 TaskProgram</b></div>
+            <pre>{
+  "schema": "task_program/1.0",
+  "program_id": "...",
+  "source_instruction": "...",
+  "root": {
+    "kind": "task",
+    "task_type": "place",
+    "object": EntityQuery,
+    "destination": EntityQuery,
+    "relation": "...",
+    "params": {...},
+    "goal": Formula
+  },
+  "safety_policy": "...",
+  "translation_metadata": {...},
+  "scene_snapshot_ref": "...",
+  "source_world_revision": N
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次 TaskProgram</b></div>
+            <pre>schema = task_program/1.0
+program_id =
+  task_program_rule_fallback_
+  38a52c21d1b6
+
+object =
+  {category: apple,
+   attributes: {color: green}}
+
+destination =
+  {category: plate,
+   attributes: {}}
+
+relation = inside_support_region
+requires_empty = true
+source_world_revision = 1</pre>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <strong>本次特殊情况：</strong>
+          模型规范化请求返回 HTTP 503。系统没有跳过 schema 与语义检查，而是由
+          <code>rule_task_program/1.0</code> 生成同一规范结构；
+          <code>translation_metadata.semantic_constraints_verified=true</code>，
+          <code>program_normalizations=[]</code>。
+        </div>
+
+        <div class="owner-strip">
+          <div><b>对象所有者</b>任务程序规范化器 / 规则回退翻译器</div>
+          <div><b>编译前拒绝条件</b>snapshot_ref 不匹配、source_world_revision 不匹配、未知字段或非法谓词</div>
+          <div><b>进入下一层</b>只交付语义查询和公式；实体 ID 由 Grounder 决定。</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="kicker">04 · 语义查询如何绑定稳定实体</div>
+        <h2>“绿色苹果”不是字符串替换，而是 Query → Candidates → TaskSlot → BindingArtifact</h2>
+        <p class="lead">
+          绑定阶段把自然语言属性与场景实体对齐，同时保存候选、分数、证据、基数和读集。
+          若候选歧义或置信度不足，系统必须停在 unresolved / ambiguous，而不能猜一个对象继续。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>EntityQuery + scene indexes</code><span class="eq-arrow">→</span>
+            <code>SemanticGrounder._normalize_query()</code><span class="eq-arrow">→</span>
+            <code>locate + score + cardinality check</code><span class="eq-arrow">→</span>
+            <code>TaskSlot + BindingArtifact</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>{apple, color=green}</code><span class="eq-arrow">→</span>
+            <code>candidate apple_3, score=1.0</code><span class="eq-arrow">→</span>
+            <code>slot_root_object=[apple_3]</code>；
+            <code>{plate}</code><span class="eq-arrow">→</span>
+            <code>plate_1, score=1.0</code><span class="eq-arrow">→</span>
+            <code>slot_root_destination=[plate_1]</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>object query:
+{
+  category: "apple",
+  attributes: {color: "green"}
+}
+
+destination query:
+{
+  category: "plate",
+  attributes: {}
+}
+
+cardinality:
+{mode:"exactly_n", count:1,
+ ordered:false}</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>规范化 / 绑定规则</b></div>
+            <div class="rule-list">
+              <div class="rule-item"><i>1</i><span>字符串查询先改写为对象，并补 <code>attributes={}</code>。</span></div>
+              <div class="rule-item"><i>2</i><span>合并 selection_basis；若与显式类别、属性、scope 冲突则拒绝。</span></div>
+              <div class="rule-item"><i>3</i><span>处理 ball / apple 等类别别名，调用 perception.locate，按实体 ID 去重。</span></div>
+              <div class="rule-item"><i>4</i><span>按 score 排序并检查基数；唯一候选或显著领先才进入 resolved。</span></div>
+              <div class="rule-item"><i>5</i><span>候选实体进入权威世界时构建 Entity，并生成记录级 read_set。</span></div>
+            </div>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准产物</b></div>
+            <pre>TaskSlot {
+  slot_id, role, query,
+  cardinality,
+  binding_state,
+  binding_revision,
+  candidates[],
+  bound_entity_ids[],
+  completed_entity_ids[],
+  bound_at, valid_until
+}
+
+BindingArtifact {
+  artifact_ref, program_ref,
+  slot_id, query,
+  world_revision,
+  candidate_entity_ids[],
+  selected_entity_ids[],
+  evidence_refs[],
+  read_set{}
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次绑定实例</b></div>
+            <pre>slot_root_object:
+  role = manipulated_object
+  candidate = apple_3
+  score = 1.0, rank = 1
+  evidence = sim_pose_apple_3
+  binding_state = resolved
+  bound_entity_ids = [apple_3]
+
+slot_root_destination:
+  role = destination_region_owner
+  candidate = plate_1
+  score = 1.0, rank = 1
+  evidence = sim_pose_plate_1
+  binding_state = resolved
+  bound_entity_ids = [plate_1]</pre>
+          </div>
+        </div>
+
+        <div class="schema-table">
+          <div class="head">绑定状态</div><div class="head">何时进入</div><div class="head">系统行为</div>
+          <div class="key"><code>resolved</code></div><div>候选满足基数，且不存在低置信或近分歧义</div><div>允许编译为稳定实体 ID。</div>
+          <div class="key"><code>ambiguous</code></div><div>多个候选分数接近，无法安全自动选择</div><div>禁止执行，等待新观察或人工消歧。</div>
+          <div class="key"><code>unresolved</code></div><div>无候选、候选不足或旧候选丢失</div><div>触发重新观察、澄清或失败诊断。</div>
+          <div class="key"><code>stale / lost</code></div><div>TTL、候选集或依赖版本已经变化</div><div>重新定位并保留已完成成员的身份承诺。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="kicker">05 · TaskProgram 如何编译成根节点</div>
+        <h2>编译器把变量、约束与重试策略物化为唯一根 TaskNodeSpec</h2>
+        <p class="lead">
+          初始编译不会预先展开整棵 75 节点任务树。它先生成一个确定性根节点，
+          运行时只有在需要分解或修复时才追加 GraphDelta。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>TaskProgram + resolved bindings + predicate registry</code>
+            <span class="eq-arrow">→</span>
+            <code>TaskCompiler.compile()</code>
+            <span class="eq-arrow">→</span>
+            变量物化 + 前置条件 / 目标 / 重试策略
+            <span class="eq-arrow">→</span>
+            <code>TaskNodeSpec + kernel tree definition</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>$object=apple_3, $destination=plate_1, requires_empty=true</code>
+            <span class="eq-arrow">→</span>
+            <code>support_region_empty(plate_1)=true</code>
+            <span class="eq-arrow">→</span>
+            <code>node_38af281a3299</code>，
+            <code>max_attempts=1, max_repairs=3</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <ul>
+              <li>规范化 TaskProgram</li>
+              <li>两个 resolved TaskSlot / BindingArtifact</li>
+              <li>当前场景能力快照与 world revision</li>
+              <li>predicate registry 与任务资源前置条件</li>
+            </ul>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>编译规则</b></div>
+            <ul>
+              <li>再次检查 scene snapshot ref 和 source revision，防止陈旧绑定。</li>
+              <li>根 ID 由 program_id 稳定派生，不在编译后改名。</li>
+              <li><code>$object / $destination</code> 替换为稳定实体 ID。</li>
+              <li><code>requires_empty=true</code> 生成可递归修复的前置公式。</li>
+              <li>目标、义务、参与者角色和 retry policy 一起写入节点。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准根节点</b></div>
+            <pre>TaskNodeSpec {
+  node_id,
+  task_type,
+  operation_kind,
+  control_kind,
+  origin,
+  parameters,
+  preconditions,
+  postconditions,
+  max_attempts,
+  max_repairs,
+  execution_policy
+}
+
+Kernel tree definition {
+  schema, root_id, task_id,
+  program_ref, world_revision,
+  nodes, edges,
+  execution_stack, metadata
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次根节点</b></div>
+            <pre>root_id = node_38af281a3299
+task_type = place
+operation_kind = decomposer
+origin = llm
+
+participants:
+  manipuland = [apple_3]
+  destination = [plate_1]
+
+precondition:
+  support_region_empty(
+    region_owner=[plate_1]
+  ) == true
+
+goal:
+  inside_support_region(
+    apple_3, plate_1) == true
+  AND
+  attached_to_any_end_effector(
+    apple_3) == false
+
+retry:
+  max_attempts=1
+  max_repairs=3
+  requires_new_world_revision=true</pre>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>编译结果：</strong>
+          <code>kernel_task_tree_definition/1.0</code> 初始只有 1 个节点、0 条边，
+          <code>preexpanded=false</code>。这保证后续的清盘和搬障碍不是预写脚本，而是由真实诊断触发。
+        </div>
+      </div>
+    </section>
+
+    <section class="repair">
+      <div class="inner">
+        <div class="kicker">06 · 公式如何变成结构化 Diagnostic</div>
+        <h2>谓词不满足时，系统不仅返回 false，还要说明失败对象、证据、读集和可修复性</h2>
+        <p class="lead">
+          内核在 ENTER / VERIFY 阶段读取世界，解析变量后的公式交给 PredicateEngine。
+          结果采用三值逻辑：<code>true</code>、<code>false</code>、<code>unknown</code>；
+          unknown 不能被当成 false。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>Formula + slot bindings + current snapshot</code>
+            <span class="eq-arrow">→</span>
+            <code>PredicateEngine.evaluate_formula()</code>
+            <span class="eq-arrow">→</span>
+            三值结果 + witness / blocker / evidence / read_set
+            <span class="eq-arrow">→</span>
+            <code>Diagnostic</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>support_region_empty(plate_1)</code>
+            <span class="eq-arrow">→</span>
+            实测 occupant <code>apple_1</code>
+            <span class="eq-arrow">→</span>
+            <code>false</code>
+            <span class="eq-arrow">→</span>
+            <code>REGION_OCCUPIED</code>
+            <span class="eq-arrow">→</span>
+            推荐 <code>clear_support_region</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>formula_kind = "preconditions"
+formula = {
+  predicate:
+    "support_region_empty",
+  participants: {
+    region_owner: ["plate_1"]
+  },
+  parameters: {
+    semantic_role:
+      "destination_state",
+    repair_policy:
+      "recursive_repair"
+  },
+  desired_value: "true"
+}
+slot_bindings = {...}
+world_snapshot = current</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>诊断构建规则</b></div>
+            <ul>
+              <li>先解析 slot 变量，再调用谓词引擎。</li>
+              <li>false 映射为语义失败码；unknown 映射为证据不足，不可混同。</li>
+              <li>对支撑区域读取实际 occupants，形成 blocker 列表。</li>
+              <li>记录 expected / actual、相关实体、证据、read_set、problem_signature 和 state fingerprint。</li>
+              <li>只有允许 recursive_repair 的标准码才标记 repairable。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准 Diagnostic</b></div>
+            <pre>Diagnostic {
+  code,
+  message,
+  details: {
+    kind, phase,
+    failed_predicate,
+    participants,
+    expected_value,
+    actual_value,
+    witness_entity_ids,
+    blocking_entity_ids,
+    world_revision,
+    relevant_read_set,
+    repair_scope_id,
+    problem_signature,
+    semantic_state_fingerprint,
+    evidence_refs,
+    derivation,
+    recoverability,
+    recommended_repairs,
+    failed_formula
+  },
+  retryable,
+  repairable
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次第一次诊断</b></div>
+            <pre>code = REGION_OCCUPIED
+phase = preconditions
+failed_predicate =
+  support_region_empty
+participants =
+  {region_owner:[plate_1]}
+expected_value = true
+actual_value = false
+blocking_entity_ids = [apple_1]
+recoverability = repairable
+recommended_repairs =
+  [clear_support_region]
+repairable = true
+
+事件摘要:
+  event 6
+  diagnostic=REGION_OCCUPIED</pre>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <strong>为什么不能“顺手搬走红球”：</strong>
+          若控制器私自处理 blocker，任务树不会知道修复副作用，也无法建立
+          <code>occupies_support_region(apple_1, plate_1)=false</code>
+          这一条必须持续验证的义务。
+        </div>
+      </div>
+    </section>
+
+    <section class="repair">
+      <div class="inner">
+        <div class="kicker">07 · Diagnostic 如何变成 RepairProposal / GraphDelta</div>
+        <h2>修复不是一段临时代码，而是通过严格边界校验后挂入任务树的新子图</h2>
+        <p class="lead">
+          RepairResolver 读取失败节点、结构化诊断、当前预算、工件上下文和世界能力，
+          选择标准修复规则，再把修复节点翻译为内核可验证的 GraphDelta。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>failed node + Diagnostic + repair context + budget</code>
+            <span class="eq-arrow">→</span>
+            <code>HarnessRepairResolver.propose()</code>
+            <span class="eq-arrow">→</span>
+            <code>RepairPlanner</code> 规则选择
+            <span class="eq-arrow">→</span>
+            边界校验
+            <span class="eq-arrow">→</span>
+            <code>RepairProposal(GraphDelta)</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>REGION_OCCUPIED + blocker=apple_1</code>
+            <span class="eq-arrow">→</span>
+            <code>ClearSupportRegion(plate_1)</code>
+            <span class="eq-arrow">→</span>
+            持久义务 <code>apple_1 not occupies plate_1</code>；
+            后续 <code>PATH_BLOCKED + box_1</code>
+            <span class="eq-arrow">→</span>
+            <code>RelocateBlocker(box_1)</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>failed_node: TaskNodeSpec
+diagnostic: Diagnostic
+repair_context:
+  artifacts
+  world / verifier
+  current task tree
+repair_index
+kernel limits:
+  max_repairs
+  max_repair_depth
+  max_nodes</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>构建与边界规则</b></div>
+            <ul>
+              <li>标准诊断先转换为 Harness FailureDiagnostic。</li>
+              <li>RepairPlanner 选择规则并生成 repair_node。</li>
+              <li>修复中涉及的新实体必须先进入权威世界。</li>
+              <li>绑定工件替换与消费者引用，计算 invalidates_artifacts。</li>
+              <li>GraphDelta 只能有一条从失败节点出发的 repair mount edge。</li>
+              <li>禁止替换根节点、逃逸出修复子树或注入未声明节点。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准产物</b></div>
+            <pre>RepairProposal {
+  delta: GraphDelta {
+    nodes: AddNode[],
+    edges: AddEdge[],
+    root_id?
+  },
+  entry_node_id,
+  rationale,
+  kind:
+    repair | reconciliation,
+  invalidates_artifacts[],
+  persistent_obligations[]
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次第一层修复</b></div>
+            <pre>entry =
+  .../repair-0/
+  clear-support-region-e81b...
+rationale =
+  "目标区域存在占用物，
+   先逐个移至受信临时区域"
+
+GraphDelta:
+  nodes = [ClearSupportRegion]
+  edge =
+    root --repair--> clear_region
+
+invalidated_artifact_refs =
+  [plate_1]
+
+persistent_obligations:
+  occupies_support_region(
+    apple_1, plate_1) == false
+
+event 5: graph_delta
+event 7: repair_mounted</pre>
+          </div>
+        </div>
+
+        <div class="subhead"><span>7B</span><b>PATH_BLOCKED 的修复提案还必须通过四个物理可行性门槛</b></div>
+        <div class="gate-grid">
+          <div class="gate"><b>门槛 1 · blocker 可移动</b><span><code>box_1.movable=true</code>；固定墙体不能被生成搬运修复。</span></div>
+          <div class="gate"><b>门槛 2 · 抓取能力可用</b><span><code>box_1.interaction_capabilities.grasp=available</code>。</span></div>
+          <div class="gate"><b>门槛 3 · 反事实路径恢复</b><span>在候选世界中移除 box_1 后，原 apple_1 抓取路线必须重新可行。</span></div>
+          <div class="gate"><b>门槛 4 · 有合法停车区</b><span>选择 table_1/support，布局 envelope、碰撞和占用检查全部通过。</span></div>
+        </div>
+
+        <div class="matrix" style="margin-top:18px;">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>第二次输入</b></div>
+            <p>清盘子内部的 <code>plan_detour(apple_1)</code> 失败，诊断码为 <code>PATH_BLOCKED</code>，直接 blocker 为 <code>box_1</code>。</p>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>规则命中</b></div>
+            <p>四个门槛全部通过后，RepairPlanner 才允许生成 <code>relocate_blocker(box_1)</code>，并要求搬完后重新规划原失败节点。</p>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准子图</b></div>
+            <pre>failed plan_detour
+  └─ repair edge
+     └─ RelocateBlocker
+        ├─ pick / carry
+        ├─ place to staging
+        └─ verify path improved</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次第二层实例</b></div>
+            <pre>entry =
+  .../repair-0/
+  relocate-blocker-7881...
+object_ref = box_1
+source_support_id = floor_1
+purpose = clear_navigation_path
+blocking_target_id = apple_1
+minimum_relocation_distance = 0.39 m
+baseline_world_revision = 9
+
+event 46: graph_delta
+event 47: PATH_BLOCKED
+event 48: repair_mounted</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="kicker">08 · 递归任务树如何实例化并回溯</div>
+        <h2>每个修复节点仍按同一规范继续分解、规划、执行和验证</h2>
+        <p class="lead">
+          “递归”不是函数名，而是失败节点下挂入一棵同样遵守任务契约的子树。
+          子树成功后，父节点回到原失败位置，用新世界 revision 重新进入。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>RepairProposal.entry_node</code><span class="eq-arrow">→</span>
+            decomposer 展开 <code>GraphDelta</code><span class="eq-arrow">→</span>
+            TaskTreeStore 挂载并建立 <code>ExecutionFrame</code>
+            <span class="eq-arrow">→</span>
+            执行 / 验证子树
+            <span class="eq-arrow">→</span>
+            返回父失败点重新求值
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            根 Place 失败
+            <span class="eq-arrow">→</span>
+            深度 1 清盘
+            <span class="eq-arrow">→</span>
+            清盘路径失败
+            <span class="eq-arrow">→</span>
+            深度 2 搬 <code>box_1</code>
+            <span class="eq-arrow">→</span>
+            回到清盘
+            <span class="eq-arrow">→</span>
+            回到根 Place；
+            最终 <code>75 nodes / 536 events</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入</b></div>
+            <p>RepairProposal 中只有修复入口节点。它仍可能是 decomposer，需要运行时按 task_type 展开。</p>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>展开规则</b></div>
+            <ul>
+              <li>Decomposer 只能返回 GraphDelta，不能直接改 TaskTreeStore。</li>
+              <li>child_policy 决定顺序；执行栈只推进当前活动分支。</li>
+              <li>子节点成功后验证修复 goal / obligation，再回到父节点。</li>
+              <li>重新进入原失败节点时要求新的 world revision。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准运行状态</b></div>
+            <pre>TaskNodeRuntime {
+  status,
+  phase,
+  attempts,
+  repairs,
+  expanded,
+  output_artifacts[],
+  last_diagnostic,
+  adapter_state,
+  active_obligations[]
+}
+
+ExecutionFrame {
+  node_id,
+  phase,
+  next_child_index,
+  active_child_id,
+  original_diagnostic,
+  last_child_diagnostic
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次运行规模</b></div>
+            <pre>final nodes = 75
+kernel events = 536
+graph_delta events = 25
+repair_mounted = 2
+reconciliation_mounted = 1
+repair depth:
+  clear_support_region = 1
+  relocate_blocker = 2
+terminal_status = SUCCEEDED</pre>
+          </div>
+        </div>
+
+        <div class="tree">
+          <div class="tree-root">
+            <b>根任务：Place(apple_3 → plate_1)</b>
+            <span>前置条件：plate_1 必须为空；第一次进入发现 apple_1 占据盘面</span>
+          </div>
+          <div class="tree-line"></div>
+          <div class="repair-frame">
+            <div class="repair-caption">repair depth 1 · ClearSupportRegion(plate_1)</div>
+            <div class="tree-node">
+              <b>清空目标盘面</b>
+              <span>只移动真实 blocker apple_1；目标对象 apple_3 被列入 exclude_entity_ids</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child"><b>选择受信临时区</b><span>floor_1/support<br>生成布局预留</span></div>
+              <div class="tree-child"><b>搬运 apple_1</b><span>规划抓取路线<br>抓取、运输、放置</span></div>
+              <div class="tree-child"><b>验证持久义务</b><span>apple_1 不再占据 plate_1</span></div>
+            </div>
+
+            <div class="tree-line"></div>
+            <div class="repair-frame nested">
+              <div class="repair-caption">repair depth 2 · RelocateBlocker(box_1)</div>
+              <div class="tree-node" style="background:var(--rule-soft);border-color:var(--rule);">
+                <b>黄色箱体阻断 apple_1 的路径</b>
+                <span>先把 box_1 放到 table_1/support 的独立布局目标，再重算原路线</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-child"><b>抓取 box_1</b><span>路径、交互位、抓取附着分别验证</span></div>
+                <div class="tree-child"><b>停放到 table_1</b><span>layout target rev 21<br>rev 31 实际到位</span></div>
+                <div class="tree-child"><b>回到失败点</b><span>原 plan_detour<br>attempts=2 后成功</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="return-row">
+            <span>box_1 搬障碍成功</span><i>↑</i><span>apple_1 清盘成功</span><i>↑</i><span>根 Place 在新世界继续</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="kicker">09 · 规划结果如何规范化为不可变工件</div>
+        <h2>路线和布局不是临时数组，而是带 schema、读集、模型版本和消费契约的 Artifact</h2>
+        <p class="lead">
+          规划节点只发布工件，物理节点只能消费声明过的引用。
+          世界变化后，运行时逐项比较工件的记录级依赖；不满足时拒绝，而不是继续使用旧路径。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>world snapshot + bound entities + geometry + goal</code>
+            <span class="eq-arrow">→</span>
+            planner / layout compiler
+            <span class="eq-arrow">→</span>
+            连续碰撞与容差验证
+            <span class="eq-arrow">→</span>
+            加入 schema / model version / read_set
+            <span class="eq-arrow">→</span>
+            发布不可变 <code>Artifact</code>
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>plate_1/interior + apple_3 @ world rev51</code>
+            <span class="eq-arrow">→</span>
+            <code>layout-targets-3ea13...</code>；
+            <code>apple_3 held @ rev63</code>
+            <span class="eq-arrow">→</span>
+            <code>path_ba7f... / 6 poses / 444 dense samples</code>
+            <span class="eq-arrow">→</span>
+            最终误差 <code>0.039624 m &lt; 0.04 m</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <ul>
+              <li>当前世界快照与实体绑定</li>
+              <li>目标区域、对象尺寸、机器人足迹和碰撞模型</li>
+              <li>当前夹爪 / payload 状态</li>
+              <li>producer 与 continuation 的 artifact contract</li>
+            </ul>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>构建 / 发布规则</b></div>
+            <ul>
+              <li>布局目标使用 anchor-local 坐标，并附 state fingerprint 与 reservation。</li>
+              <li>路径必须声明 planner、控制器、碰撞模型、足迹模型和采样策略。</li>
+              <li>发布前进行连续 SE(2) sweep 验证，而非只检查稀疏 waypoint。</li>
+              <li>工件带 read_set；消费前逐项调用 record version check。</li>
+              <li>替换布局要先完成新发布，再把旧 reservation 标为 superseded / invalidated。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准工件骨架</b></div>
+            <pre>Artifact {
+  artifact_ref,
+  artifact_kind,
+  schema/model versions,
+  producer_node_id,
+  continuation_node_id,
+  world_revision,
+  read_set: {
+    record/entity/...: revision,
+    record/robot/...: revision,
+    record/interaction/current: revision,
+    record/safety/...: epoch,
+    record/frame_graph/...: revision
+  },
+  payload,
+  requires_revalidation
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次主任务工件</b></div>
+            <pre>layout:
+  ref = layout-targets-
+    3ea13d6d20e77712b9e8a32f
+  region = plate_1/interior
+  subject = apple_3
+  local_xy = [0.0, -0.08]
+  world_revision = 51
+  reservation_status = fulfilled
+  fulfilled_world_revision = 74
+
+path:
+  ref = path_ba7f2f29bb60d0c6
+  schema = detour_path/2.0
+  world_revision = 63
+  planner = se2_lattice_astar
+  poses = 6
+  dense samples = 444
+  route_validation.ok = true
+  target_ref = 上述 layout</pre>
+          </div>
+        </div>
+
+        <div class="schema-table">
+          <div class="head">实例工件</div><div class="head">关键依赖 / 验证</div><div class="head">在本次流程中的作用</div>
+          <div class="key"><code>layout-targets-01a...</code></div><div>table_1/support；box_1 local_xy=(-0.36,-0.08)；rev 21</div><div>把黄色箱体停到桌面，rev 31 验证误差 0.0130 m。</div>
+          <div class="key"><code>layout-targets-2152...</code></div><div>floor_1/support；apple_1 local_xy=(-0.12,-0.08)；rev 7</div><div>把红球移出盘面，rev 51 验证误差 0.00178 m。</div>
+          <div class="key"><code>path_3835...</code></div><div>apple_3 抓取路线；rev 53；16 poses；1491 dense samples</div><div>箱体和红球移动后，为主任务重新规划到绿球的安全路线。</div>
+          <div class="key"><code>path_ba7f...</code></div><div>带载前往 plate_1；rev 63；读集含 plate、apple_3、box、gripper、frame graph</div><div>只有相关版本仍匹配，最终 reposition 才可执行。</div>
+        </div>
+
+        <div class="callout">
+          <strong>新鲜度判定示例：</strong>
+          <code>path_ba7f...</code> 声明 <code>record/entity/apple_3=5</code>、
+          <code>record/robot/robot_1/gripper=6</code>、<code>record/frame_graph/site_map=13</code>。
+          任一相关版本变化都会使该路径 stale；无关实体的时间戳刷新不会自动废掉路径。
+        </div>
+      </div>
+    </section>
+
+    <section class="runtime">
+      <div class="inner">
+        <div class="kicker">10 · ActionRequest 如何进入执行事务</div>
+        <h2>物理节点不能直接调用机器人：先类型化请求，再构建读写集、租约和幂等事务</h2>
+        <p class="lead">
+          14 次物理动作都经过同一个 HarnessRuntime 边界。
+          请求表达“想做什么”；事务记录“基于哪份快照、读了什么、准备写什么、锁住哪些资源”。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>physical node + artifacts + participants + expected effects</code>
+            <span class="eq-arrow">→</span>
+            类型化 <code>MacroActionRequest</code>
+            <span class="eq-arrow">→</span>
+            <code>HarnessRuntime.create_transaction()</code>
+            <span class="eq-arrow">→</span>
+            read/write set + digest + lease + fencing
+            <span class="eq-arrow">→</span>
+            至多一次派发
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            最终 physical place 节点 + <code>layout-targets-3ea13...</code>
+            <span class="eq-arrow">→</span>
+            <code>request.name=place_object</code>
+            <span class="eq-arrow">→</span>
+            冻结 <code>input_snapshot_id=scene_000136</code>
+            <span class="eq-arrow">→</span>
+            <code>txn_87622be3</code>
+            <span class="eq-arrow">→</span>
+            锁定 6 类资源
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>physical node
+declared artifacts
+tool definition
+participants
+expected target state
+current world
+safety / leases
+attempt number</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>事务构建规则</b></div>
+            <ul>
+              <li>校验工具名、participant schema、工件引用和系统专属参数。</li>
+              <li>重新同步夹爪状态，再冻结 <code>input_snapshot_id</code>。</li>
+              <li>从参与实体、相关关系、任务、夹爪、interaction、安全和 frame graph 生成 read_set。</li>
+              <li>从参与实体和 expected effects 生成 write_set。</li>
+              <li>计算 request / definition digest 与 dispatch_key，保证 at-most-once。</li>
+              <li>获取资源租约和 fencing token 后才能派发后端。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准请求 / 事务</b></div>
+            <pre>MacroActionRequest {
+  name,
+  request_id,
+  arguments,
+  expected_state,
+  input_snapshot_id
+}
+
+ExecutionTransaction {
+  id, request_id, definition_ref,
+  request_digest,
+  definition_digest,
+  dispatch_key,
+  state, phase,
+  actor_bindings,
+  input_snapshot_id,
+  read_set, write_set,
+  resource_lease_ids,
+  fencing_tokens,
+  runtime_invariants,
+  expected_effects,
+  outcome
+}</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次最终 place</b></div>
+            <pre>request.name = place_object
+input_snapshot_id = scene_000136
+participants:
+  manipuland = [apple_3]
+  destination = [plate_1]
+relation = inside_support_region
+target_ref =
+  layout-targets-
+  3ea13d6d20e77712b9e8a32f
+transport_prepared = true
+placement_prepared = true
+base_prepositioned = true
+
+transaction_id = txn_87622be3
+definition_ref = place_object@1.0.0
+resources:
+  base_or_fixed, selected_arm,
+  selected_gripper,
+  entity/apple_3, entity/plate_1,
+  workspace/local_interaction_zone</pre>
+          </div>
+        </div>
+
+        <div class="pipeline">
+          <div class="pipe"><b>PROPOSED</b><span>创建事务、冻结输入快照、计算 digest</span></div>
+          <div class="pipe"><b>VALIDATED</b><span>请求 schema、工件、read_set 和守卫通过</span></div>
+          <div class="pipe"><b>RESOURCES_RESERVED</b><span>获取独占资源、租约与 fencing token</span></div>
+          <div class="pipe"><b>DISPATCHED / ACCEPTED</b><span>按 dispatch_key 至多一次交给后端</span></div>
+          <div class="pipe"><b>EXECUTING</b><span>连续路径、抓取、运输、释放等物理阶段</span></div>
+          <div class="pipe"><b>VERIFYING / TERMINATED</b><span>采集效果证据，决定三轴结果或进入对账</span></div>
+        </div>
+
+        <div class="owner-strip">
+          <div><b>请求所有者</b>PhysicalSkill 只能构造请求</div>
+          <div><b>事务所有者</b>HarnessRuntime 创建、校验、派发和关闭</div>
+          <div><b>后端边界</b>TaskTree、Planner、Verifier 均不能直接访问机器人控制接口</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="world">
+      <div class="inner">
+        <div class="kicker">11 · 动作结果如何确认并更新世界</div>
+        <h2>Request 不是事实；只有带证据的 confirmed / refuted effect 才推进 WorldState</h2>
+        <p class="lead">
+          后端返回结果后，运行时先形成三轴结果，再把每条效果独立评估。
+          提交关系时同时处理支撑冲突、实体版本、夹爪语义和 frame graph revision。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>raw backend result</code><span class="eq-arrow">→</span>
+            <code>normalize_physical_result()</code><span class="eq-arrow">→</span>
+            <code>MacroActionResult.effects[]</code><span class="eq-arrow">→</span>
+            <code>HarnessRuntime._commit_effects()</code><span class="eq-arrow">→</span>
+            support / entity / gripper 规范化提交
+            <span class="eq-arrow">→</span>
+            新 world revision
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            最终 place 观测
+            <span class="eq-arrow">→</span>
+            <code>inside_support_region(apple_3,plate_1)=confirmed</code>；
+            <code>attached_to_any_end_effector(apple_3)=refuted</code>
+            <span class="eq-arrow">→</span>
+            Relation 写入 true / false
+            <span class="eq-arrow">→</span>
+            <code>apple_3 rev8, gripper rev7, world rev74</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>MacroActionResult {
+  termination,
+  effect_state,
+  verification,
+  failure_code,
+  effects[],
+  residual_state,
+  recovery_context
+}
+
+Effect {
+  predicate,
+  participants,
+  state:
+    confirmed | refuted | unknown,
+  required,
+  evidence_refs,
+  derivation
+}</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>世界回写规则</b></div>
+            <ul>
+              <li>confirmed 写为 relation.value=true；refuted 写为 false；unknown 不提交。</li>
+              <li>先归一化 support transition；同一对象只能保留一个新确认支撑 owner。</li>
+              <li>涉及的 manipuland / subject / object 实体提升 revision。</li>
+              <li>末端状态通过 occupancy / held ID / attachment 不变量重新提交。</li>
+              <li>frame_graph_revision 提升，后续路径与布局重新检查。</li>
+              <li>required effects 全部 confirmed 才能标记该动作效果确定成立。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准更新结果</b></div>
+            <pre>new Relation records
+updated Entity revisions
+updated EndEffectorState
+updated Task progress
+new frame_graph_revision
+new global world revision
+new evidence references
+
+下一次 freeze_snapshot()
+会生成新的 scene_xxxxxx，
+但旧动作是否 stale 仍按
+其 read_set 逐项判断。</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>最终放置观测</b></div>
+            <pre>effects:
+1. inside_support_region(
+     apple_3, plate_1)
+   state = confirmed
+   required = true
+   evidence = sim_pose_apple_3
+
+2. at_compiled_layout_target(
+     apple_3, plate_1)
+   state = confirmed
+   required = true
+   tolerance = 0.04 m
+
+3. attached_to_any_end_effector(
+     apple_3)
+   state = refuted
+   required = false
+   evidence =
+     sim_gripper_holding_entity
+
+world reaches rev 74</pre>
+          </div>
+        </div>
+
+        <div class="subhead"><span>11A</span><b>最终 place 的效果如何逐条变成世界记录</b></div>
+        <div class="mapping-table">
+          <div class="head">效果输入</div>
+          <div class="head">规范化 / 冲突处理</div>
+          <div class="head">提交到 WorldState 的记录</div>
+          <div class="head">本任务实例与版本结果</div>
+
+          <div class="source"><code>inside_support_region(apple_3,plate_1), state=confirmed</code></div>
+          <div>参与者角色规范成 <code>subject / region_owner</code>；confirmed 映射为 <code>value=true</code>；证据引用保留。</div>
+          <div><code>Relation{id=inside_support_region/plate_1/apple_3, value=true}</code></div>
+          <div class="actual">证据 <code>sim_pose_apple_3</code>；根目标第一项变为 true；<code>apple_3</code> 记录提升到 revision 8。</div>
+
+          <div class="source"><code>at_compiled_layout_target(...), state=confirmed</code></div>
+          <div>把 <code>target_ref</code> 与 0.04 m 容差保留在效果 / 工件证据中，并校验 reservation 对应同一 subject 与 anchor。</div>
+          <div><code>Relation{predicate=at_compiled_layout_target, value=true}</code> + layout fulfillment</div>
+          <div class="actual"><code>layout-targets-3ea13...</code> 在 world rev 74 fulfilled；位置误差 <code>0.039624 m</code>。</div>
+
+          <div class="source"><code>attached_to_any_end_effector(apple_3), state=refuted</code></div>
+          <div>refuted 映射为 <code>value=false</code>；同时将夹爪观测送入 EndEffectorState 不变量，空夹爪强制清除 held ID。</div>
+          <div><code>Relation.value=false</code> + <code>EndEffectorState{empty,null,none}</code></div>
+          <div class="actual">根目标第二项变为 true；gripper revision 7；证据 <code>sim_gripper_holding_entity</code>。</div>
+
+          <div class="source">同一对象的旧支撑事实</div>
+          <div><code>_reconcile_support_transitions()</code> 确保一个对象只有一个当前确认支撑 owner；新 owner 为 true 时，冲突旧 owner 写 false。</div>
+          <div>新支撑 Relation + 被反驳的旧支撑 Relation + frame graph revision</div>
+          <div class="actual"><code>apple_1: plate_1 → floor_1</code>；<code>box_1: floor_1 → table_1</code>；最终 frame graph revision 15。</div>
+
+          <div class="source"><code>state=unknown</code> 的非确定效果</div>
+          <div>只留在 MacroActionResult / reconciliation 上下文，不调用 <code>commit_relation()</code>，避免把未知当成真或假。</div>
+          <div>无新增世界事实；事务保持待确认或进入 reconciliation。</div>
+          <div class="actual">最终 place 的控制终止为 <code>outcome_unknown</code>，但后续新观察确认 required effects 后才关闭事务。</div>
+        </div>
+
+        <div class="result-axis">
+          <div class="axis"><b>终止轴 termination</b><span>调用过程如何结束：succeeded、failed、timed_out、outcome_unknown 等。</span></div>
+          <div class="axis"><b>效果轴 effect_state</b><span>物理效果是否被观察确认：confirmed、refuted、partial、unknown。</span></div>
+          <div class="axis"><b>验证轴 verification</b><span>谓词或目标是否成立：true、false、unknown、not_run。</span></div>
+        </div>
+
+        <div class="revision-table">
+          <div class="head">world rev</div><div class="head">确认阶段</div><div class="head">规范化后写入的事实 / 工件</div><div class="head">后续决策</div>
+          <div class="rev">1</div><div>任务输入版本</div><div>TaskProgram 与初始根节点引用同一源世界版本。</div><div>进入根前置条件检查。</div>
+          <div class="rev">7</div><div>红球临时布局</div><div>floor_1/support 为 apple_1 建立 active reservation。</div><div>清盘有确定目标位。</div>
+          <div class="rev">21</div><div>箱体停车布局</div><div>table_1/support 为 box_1 建立布局目标。</div><div>允许执行搬障碍。</div>
+          <div class="rev">31</div><div>箱体已搬走</div><div><code>supported_by(box_1, table_1)=true</code>；布局已 fulfillment。</div><div>重新规划 apple_1 路径。</div>
+          <div class="rev">51</div><div>盘面已清空</div><div>apple_1 在 floor_1；不再占据 plate_1；持久义务成立。</div><div>根前置条件变为 true。</div>
+          <div class="rev">53</div><div>绿球抓取路线</div><div>发布 <code>path_3835...</code>，依赖新障碍布局。</div><div>开始主任务抓取。</div>
+          <div class="rev">63</div><div>绿球已持有</div><div>发布带载前往 plate_1 的 <code>path_ba7f...</code>。</div><div>允许执行最终 reposition。</div>
+          <div class="rev">74</div><div>最终对账</div><div>绿球在盘内、已释放；红球在地面；箱体在桌面；夹爪空。</div><div>关闭事务并最终成功。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="repair">
+      <div class="inner">
+        <div class="kicker">12 · OUTCOME_UNKNOWN 如何规范化对账</div>
+        <h2>调用超时不等于动作没发生：先禁止重放，再用新观察关闭或继续事务</h2>
+        <p class="lead">
+          最终 <code>place_object</code> 在 open_gripper 阶段超时，但 transport 和 detach 已完成。
+          系统保留原始 termination，同时独立重新求值 required effects，避免重复放置。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>outcome_unknown transaction + expected effects</code>
+            <span class="eq-arrow">→</span>
+            建立 reconciliation block
+            <span class="eq-arrow">→</span>
+            新观察 + 谓词逐条求值
+            <span class="eq-arrow">→</span>
+            聚合 required effects
+            <span class="eq-arrow">→</span>
+            pending 或 closed reconciliation record
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>txn_87622be3 / TOOL_TIMEOUT / detach_committed</code>
+            <span class="eq-arrow">→</span>
+            禁止重放
+            <span class="eq-arrow">→</span>
+            <code>verify_predicates</code>
+            <span class="eq-arrow">→</span>
+            <code>evidence_e19fe8081840a6f69fa6</code>
+            <span class="eq-arrow">→</span>
+            <code>effect_state=confirmed, verification=true, status=closed</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>原始输入契约</b></div>
+            <pre>transaction = txn_87622be3
+termination = outcome_unknown
+failure_code = TOOL_TIMEOUT
+residual_state:
+  failed_stage = open_gripper
+  completed_stages =
+    [transport, detach_committed]
+expected_effects = [...]
+resources still blocked</pre>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>对账规则</b></div>
+            <ul>
+              <li>禁止同一 <code>place_object</code> 在事务关闭前重放。</li>
+              <li>允许方向仅限观察、获取新视角、谓词验证或人工协助。</li>
+              <li>重新同步夹爪并在新观察上逐条求值 expected effects。</li>
+              <li>所有 required effect 都确定后，聚合 effect_state / verification。</li>
+              <li>仍有 unknown 则保持 pending 和资源封锁；全部确定才关闭。</li>
+              <li>原始 termination 仍保留 outcome_unknown，不篡改历史。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准对账产物</b></div>
+            <pre>{
+  transaction_id,
+  status:
+    pending | closed | stale,
+  effect_state,
+  verification,
+  closed_resources[],
+  evidence_revision,
+  reconciliation_revision,
+  result
+}
+
+RepairProposal.kind =
+  reconciliation
+GraphDelta:
+  failed physical node
+    --repair-->
+  reconcile node</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次对账实例</b></div>
+            <pre>event 514:
+  diagnostic=OUTCOME_UNKNOWN
+event 516:
+  GraphDelta adds reconcile
+event 518:
+  reconciliation_mounted
+
+reconcile node:
+  task_type = reconcile
+  tool_ref = verify_predicates
+  transaction_id = txn_87622be3
+
+result:
+  status = closed
+  effect_state = confirmed
+  verification = true
+  evidence_revision =
+    evidence_e19fe8081840a6f69fa6
+  reconciliation_revision = 1
+  closed_resources = 6
+
+event 527:
+  reconciliation_closed</pre>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <strong>本次结果的正确读法：</strong>
+          <code>termination=outcome_unknown</code> 描述控制调用没有干净返回；
+          <code>effect_state=confirmed</code> 与 <code>verification=true</code>
+          描述新观察已经证明绿球在盘内且不再附着。三轴可以同时成立，并不矛盾。
+        </div>
+      </div>
+    </section>
+
+    <section class="world">
+      <div class="inner">
+        <div class="kicker">13 · 最终独立验证与最终快照</div>
+        <h2>成功由最终世界公式决定，不由最后一次工具返回值决定</h2>
+        <p class="lead">
+          Verifier 在新的 <code>scene_000142</code> 上重新检查根目标、修复义务、布局 fulfillment、
+          夹爪状态和事务闭合。全部成立后，根节点才进入 SUCCEEDED。
+        </p>
+
+        <div class="build-equation">
+          <div class="eq-label">通用构建式</div>
+          <div class="eq-body">
+            <code>goal + postconditions + persistent obligations + final snapshot + transaction closure</code>
+            <span class="eq-arrow">→</span>
+            独立逐项求值
+            <span class="eq-arrow">→</span>
+            所有 required 结果必须为 true
+            <span class="eq-arrow">→</span>
+            根节点终态
+          </div>
+          <div class="eq-label instance-label">本任务字段链</div>
+          <div class="eq-body instance-body">
+            <code>scene_000142@rev74</code>
+            <span class="eq-arrow">→</span>
+            绿球在盘内且已释放 + 红球不占盘 + 箱体在桌面 + gripper empty + txn closed
+            <span class="eq-arrow">→</span>
+            <code>terminal_status=SUCCEEDED</code>
+          </div>
+        </div>
+
+        <div class="matrix">
+          <div class="cell">
+            <div class="cell-head"><span class="cell-index">1</span><b>最终验证输入</b></div>
+            <ul>
+              <li>根 goal 公式</li>
+              <li>运行时继承的 persistent obligations</li>
+              <li>最新 transactional world snapshot</li>
+              <li>布局 reservation / fulfillment</li>
+              <li>reconciliation closure record</li>
+            </ul>
+          </div>
+          <div class="cell rule">
+            <div class="cell-head"><span class="cell-index">2</span><b>验证规则</b></div>
+            <ul>
+              <li>目标、postcondition 和 obligation 分别求值。</li>
+              <li>不得用“动作曾经 succeeded”替代当前世界事实。</li>
+              <li>已确认 effect 可作为证据，但最终仍与 live predicate 对照。</li>
+              <li>任何 required 公式为 false 或 unknown 都不能宣告成功。</li>
+              <li>对账事务必须 closed，禁止遗留资源封锁。</li>
+            </ul>
+          </div>
+          <div class="cell output">
+            <div class="cell-head"><span class="cell-index">3</span><b>标准终态</b></div>
+            <pre>root runtime:
+  status = SUCCEEDED
+  phase = terminal
+  last_diagnostic = null
+
+tree snapshot:
+  terminal_status = SUCCEEDED
+  paused = false
+  diagnostics = []
+
+world snapshot:
+  robot.world_state/1.0
+  consistency =
+    transactional_cut</pre>
+          </div>
+          <div class="cell instance">
+            <div class="cell-head"><span class="cell-index">4</span><b>本次最终字段</b></div>
+            <pre>scene_000142 / rev 74
+frame_graph_revision = 15
+
+inside_support_region(
+  apple_3, plate_1) = true
+attached_to_any_end_effector(
+  apple_3) = false
+
+inside_support_region(
+  apple_1, floor_1) = true
+supported_by(
+  box_1, table_1) = true
+
+gripper:
+  occupancy = empty
+  held_entity_id = null
+  attachment_state = none
+
+txn_87622be3:
+  reconciliation_status = closed</pre>
+          </div>
+        </div>
+
+        <div class="world-grid">
+          <div class="world-figure">
+            <svg viewBox="0 0 920 610" role="img" aria-label="绿球任务最终世界状态示意图">
+              <rect x="16" y="16" width="888" height="578" rx="5" fill="#edf4ef" stroke="#91a99a" stroke-width="3"/>
+              <text x="40" y="54" fill="#456052" font-size="22" font-weight="700">scene_000142 · revision 74 · transactional_cut</text>
+
+              <rect x="270" y="185" width="112" height="278" fill="#9ca8b0" stroke="#5d6972" stroke-width="3"/>
+              <rect x="540" y="185" width="112" height="278" fill="#9ca8b0" stroke="#5d6972" stroke-width="3"/>
+              <text x="289" y="215" fill="#fff" font-size="17">aisle_left</text>
+              <text x="553" y="215" fill="#fff" font-size="17">aisle_right</text>
+
+              <rect x="300" y="70" width="330" height="125" rx="4" fill="#d5c3a6" stroke="#7c6c55" stroke-width="4"/>
+              <text x="437" y="98" fill="#51483c" font-size="21" font-weight="700">table_1</text>
+
+              <rect x="323" y="112" width="83" height="59" rx="4" fill="#e2a52b" stroke="#956408" stroke-width="4"/>
+              <text x="302" y="225" fill="#875b08" font-size="19" font-weight="700">box_1 / supported_by table_1</text>
+
+              <ellipse cx="530" cy="144" rx="86" ry="33" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="530" cy="144" rx="60" ry="21" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="530" cy="136" r="23" fill="#43a95e" stroke="#246d39" stroke-width="5"/>
+              <text x="640" y="145" fill="#246d39" font-size="19" font-weight="700">apple_3 在 plate_1 内</text>
+
+              <circle cx="350" cy="520" r="24" fill="#d45249" stroke="#85322d" stroke-width="4"/>
+              <text x="208" y="564" fill="#943d37" font-size="19" font-weight="700">apple_1 在 floor_1</text>
+
+              <g transform="translate(530,520)">
+                <rect x="-42" y="-33" width="84" height="66" rx="5" fill="#246bce" stroke="#154c91" stroke-width="4"/>
+                <circle cx="0" cy="-40" r="18" fill="#dcecff" stroke="#154c91" stroke-width="4"/>
+                <line x1="-17" y1="2" x2="-55" y2="-17" stroke="#154c91" stroke-width="8"/>
+                <line x1="17" y1="2" x2="55" y2="-17" stroke="#154c91" stroke-width="8"/>
+              </g>
+              <text x="610" y="524" fill="#174f94" font-size="19" font-weight="700">robot_1 / gripper empty</text>
+
+              <path d="M466 430 C468 342 468 278 482 214" fill="none" stroke="#2a7b50" stroke-width="6" stroke-dasharray="12 9"/>
+              <polygon points="484,202 472,224 496,222" fill="#2a7b50"/>
+              <text x="490" y="352" fill="#2a7b50" font-size="18" font-weight="700">通道恢复，可到达盘面</text>
+            </svg>
+          </div>
+
+          <div class="checks">
+            <div class="check"><i>✓</i><div><b>主目标成立</b><span><code>inside_support_region(apple_3, plate_1)=true</code></span></div></div>
+            <div class="check"><i>✓</i><div><b>绿球已经释放</b><span><code>attached_to_any_end_effector(apple_3)=false</code></span></div></div>
+            <div class="check"><i>✓</i><div><b>清盘持久义务成立</b><span>apple_1 已位于 floor_1，不再占据 plate_1。</span></div></div>
+            <div class="check"><i>✓</i><div><b>搬障碍目标成立</b><span>box_1 位于 table_1，路径 clearance 已改善。</span></div></div>
+            <div class="check"><i>✓</i><div><b>布局目标成立</b><span>apple_3 位置误差 0.039624 m，小于 0.04 m 容差。</span></div></div>
+            <div class="check"><i>✓</i><div><b>事务与资源闭合</b><span>txn_87622be3 经 reconciliation 关闭，没有遗留禁止重放状态。</span></div></div>
+          </div>
+        </div>
+
+        <div class="source-note">
+          <b>本图采用的真实运行：</b>
+          <code>continuous_20260901_072644_3e425d</code>，
+          场景 <code>recursive_recovery_showcase</code>，
+          命令目录 <code>0001_cmd_0001_5afa1e6f</code>。
+          “绿球”在场景 ontology 中是 <code>apple_3</code>；
+          占盘红球是 <code>apple_1</code>。
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="inner footer-grid">
+        <div>
+          <h3>真实产物来源</h3>
+          <p><code>task_program.json</code> · 语言规范化结果</p>
+          <p><code>parse_report.json</code> · 503 与规则回退记录</p>
+          <p><code>compiled_tree_initial.json</code> · 初始唯一根节点</p>
+          <p><code>tree_snapshot.json</code> · 75 节点、536 个内核事件</p>
+          <p><code>dispatch_registry.json</code> · 14 次物理派发</p>
+          <p><code>command_0001_final.json</code> · scene_000142 / world rev 74</p>
+        </div>
+        <div>
+          <h3>核心实现边界</h3>
+          <p><code>scene_capabilities.py</code> · 场景能力投影</p>
+          <p><code>world_state.py</code> · 记录规范化、版本与快照冻结</p>
+          <p><code>grounding.py</code> · Query、TaskSlot、BindingArtifact</p>
+          <p><code>task_compiler.py</code> · TaskProgram → TaskNode</p>
+          <p><code>semantics.py / repair.py</code> · Diagnostic 与 GraphDelta</p>
+          <p><code>runtime.py</code> · 事务、效果提交与 reconciliation</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Recursive Tree Agent 框架构建图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17242d;
+      --muted: #5d6b73;
+      --line: #d4dcdf;
+      --paper: #ffffff;
+      --page: #f4f6f3;
+      --accent: #c48712;
+      --green: #27836f;
+      --repair: #ad476c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC",
+        Arial, sans-serif;
+      letter-spacing: 0;
+      line-height: 1.65;
+    }
+
+    header {
+      padding: 34px max(28px, calc((100vw - 1540px) / 2)) 24px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+
+    header p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    main {
+      width: min(1600px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .diagram {
+      overflow: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .diagram img {
+      display: block;
+      width: 100%;
+      min-width: 1120px;
+      height: auto;
+    }
+
+    .summary {
+      margin: 28px 0 0;
+      padding: 22px 0 4px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: 24px;
+    }
+
+    h3 {
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0 28px;
+      margin-top: 18px;
+    }
+
+    .step {
+      min-width: 0;
+      padding: 18px 0;
+      border-top: 3px solid var(--accent);
+    }
+
+    .step:nth-child(2n) {
+      border-top-color: var(--green);
+    }
+
+    .step:nth-child(7),
+    .step:nth-child(8) {
+      border-top-color: var(--repair);
+    }
+
+    .step p,
+    .boundary p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .boundary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px;
+      margin-top: 30px;
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .tree-section {
+      display: grid;
+      grid-template-columns: minmax(420px, 0.95fr) minmax(0, 1.05fr);
+      gap: 42px;
+      align-items: start;
+      padding-top: 30px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 20px 22px;
+      overflow: auto;
+      background: #20292f;
+      color: #f5f7f7;
+      border-radius: 8px;
+      font: 15px/1.65 Consolas, "Microsoft YaHei", monospace;
+      white-space: pre;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 1px solid var(--line);
+    }
+
+    th,
+    td {
+      padding: 11px 13px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      width: 34%;
+      background: #f7f8f6;
+      font-size: 14px;
+    }
+
+    td {
+      font-size: 14px;
+    }
+
+    code {
+      font-family: Consolas, "Microsoft YaHei", monospace;
+      font-size: 0.92em;
+    }
+
+    footer {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    @media (max-width: 980px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      .steps,
+      .boundary,
+      .tree-section {
+        grid-template-columns: 1fr;
+      }
+
+      .diagram img {
+        min-width: 980px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      header {
+        padding: 20px 0;
+      }
+
+      main {
+        width: 100%;
+        padding: 12px 0;
+      }
+
+      .diagram {
+        overflow: visible;
+      }
+
+      .diagram img {
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Task Recursive Tree Agent 框架构建图</h1>
+    <p>
+      面向非源码读者的中文说明：从一句自然语言任务，走到递归任务树、规划工件、
+      物理执行、观测验证和自动修复。
+    </p>
+  </header>
+
+  <main>
+    <div class="diagram">
+      <img
+        src="task-recursive-tree-agent-framework.zh-CN.svg"
+        alt="Task Recursive Tree Agent 中文分层架构图">
+    </div>
+
+    <section class="summary">
+      <h2>按编号读图</h2>
+      <div class="steps">
+        <article class="step">
+          <h3>1. 人下达任务</h3>
+          <p>语音、文本、暂停和继续都进入同一个持续会话，控制台只负责交互和观察。</p>
+        </article>
+        <article class="step">
+          <h3>2. LLM 理解意图</h3>
+          <p>GeminiER2 负责自然语言规划、澄清和实体绑定，产出受约束的任务程序。</p>
+        </article>
+        <article class="step">
+          <h3>3. 翻译成内核结构</h3>
+          <p><code>KernelCompilerBridge</code> 把 Harness 树 DTO 翻译成 <code>TaskTreeDefinition</code>。</p>
+        </article>
+        <article class="step">
+          <h3>4. 每个任务重新装配</h3>
+          <p>新任务获得新的 Store 和 Kernel，但继续使用同一个真实场景、世界状态和物理运行时。</p>
+        </article>
+        <article class="step">
+          <h3>5. 内核解释任务树</h3>
+          <p>内核统一处理进入、目标检查、前置条件、执行、子节点、验证、重试和修复。</p>
+        </article>
+        <article class="step">
+          <h3>6. 请求物理动作</h3>
+          <p>物理技能不能直接控制机器人，只能构造带契约和稳定 ID 的宏动作请求。</p>
+        </article>
+        <article class="step">
+          <h3>7. 用观测确认结果</h3>
+          <p>每个动作后重新观测世界；成功与否由实时谓词和后置条件决定，不靠动作返回值猜测。</p>
+        </article>
+        <article class="step">
+          <h3>8. 失败显式修复</h3>
+          <p>失败先变成结构化 Diagnostic，再生成修复子树并挂到 repair 边，修好后重试原节点。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="boundary">
+      <div>
+        <h2>每个任务新建</h2>
+        <p>
+          <code>TaskTreeStore</code>、<code>TaskTreeKernel</code>、
+          <code>KernelTreeProjection</code> 和当前任务的执行栈。这样不会把不同根目标的节点混在一起。
+        </p>
+      </div>
+      <div>
+        <h2>跨任务复用</h2>
+        <p>
+          场景、世界模型、感知、HarnessRuntime、事务记录和 MuJoCo/机器人后端。
+          因此第二条指令是在第一条指令改变后的世界上继续执行。
+        </p>
+      </div>
+    </section>
+
+    <section class="tree-section">
+      <div>
+        <h2>“放置物体”会展开成什么</h2>
+        <pre>放置 Place
+├─ 解析并检查对象与目标区域
+├─ 规划抓取
+├─ 提前规划持物运输
+├─ 抓取 Pick
+│  ├─ 移动到抓取位
+│  ├─ 执行抓取
+│  └─ 确认已经持有
+├─ 持物移动 TransferHeld
+│  ├─ 切换运输姿态
+│  ├─ 按安全路线移动
+│  └─ 确认可以放置
+├─ 释放 Release
+│  ├─ 执行释放
+│  └─ 确认已经松开
+└─ 确认物体到达目标区域
+
+路线被挡时：
+失败节点
+└─ repair：搬走阻挡物
+   ├─ 递归执行 Place(阻挡物, 停放区)
+   └─ 重新规划受影响路线
+完成修复后，再重试原失败节点</pre>
+      </div>
+
+      <div>
+        <h2>图中模块对应源码</h2>
+        <table>
+          <tbody>
+            <tr>
+              <th>编译桥</th>
+              <td><code>integrations/gemini_er2/compiler.py</code></td>
+            </tr>
+            <tr>
+              <th>执行装配桥</th>
+              <td><code>integrations/gemini_er2/executor.py</code></td>
+            </tr>
+            <tr>
+              <th>任务树内核</th>
+              <td><code>task/kernel.py</code></td>
+            </tr>
+            <tr>
+              <th>权威树状态</th>
+              <td><code>task/store.py</code></td>
+            </tr>
+            <tr>
+              <th>节点和 GraphDelta</th>
+              <td><code>task/model.py</code></td>
+            </tr>
+            <tr>
+              <th>GeminiER2 节点适配器</th>
+              <td><code>integrations/gemini_er2/decomposition.py</code>、<code>operations.py</code>、<code>skill.py</code></td>
+            </tr>
+            <tr>
+              <th>工件契约</th>
+              <td><code>integrations/gemini_er2/artifacts.py</code></td>
+            </tr>
+            <tr>
+              <th>物理边界</th>
+              <td><code>integrations/gemini_er2/physical_runtime.py</code></td>
+            </tr>
+            <tr>
+              <th>语义验证与修复</th>
+              <td><code>integrations/gemini_er2/semantics.py</code>、<code>repair.py</code></td>
+            </tr>
+            <tr>
+              <th>持续服务入口</th>
+              <td><code>integrations/gemini_er2/server.py</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>基于 D:\Task Recursive Tree 当前源码与 ARCHITECTURE.md 绘制</footer>
+  </main>
+</body>
+</html>

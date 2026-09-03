@@ -1,0 +1,1990 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1800, initial-scale=1">
+  <title>递归任务系统规划复盘：绿球放入空盘子</title>
+  <style>
+    :root {
+      --ink: #182126;
+      --muted: #556269;
+      --paper: #ffffff;
+      --wash: #f4f6f7;
+      --line: #cbd3d7;
+      --line-dark: #8d999f;
+      --deep: #18252c;
+      --deep-2: #25353d;
+      --teal: #087d80;
+      --teal-soft: #e8f4f3;
+      --green: #2f7950;
+      --green-soft: #eaf4ee;
+      --red: #b5483f;
+      --red-soft: #faecea;
+      --amber: #a96d12;
+      --amber-soft: #fbf2e2;
+      --blue: #2c638d;
+      --blue-soft: #eaf1f7;
+      --gray-soft: #eef1f2;
+      --table: #c6b394;
+      --box: #dda82f;
+      --ball-red: #d24c43;
+      --ball-green: #3f9b5a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1800px;
+      min-width: 1800px;
+      margin: 0;
+      color: var(--ink);
+      background: #dfe4e6;
+      font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif;
+      font-size: 20px;
+      line-height: 1.52;
+      letter-spacing: 0;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    main {
+      width: 1800px;
+      background: var(--paper);
+    }
+
+    .inner {
+      width: 1560px;
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 690px;
+      padding: 62px 0 56px;
+      color: #fff;
+      background: var(--deep);
+      border-bottom: 10px solid var(--teal);
+    }
+
+    .report-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #52636b;
+      color: #becbd0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .report-meta strong {
+      color: #fff;
+    }
+
+    .report-kicker {
+      margin-top: 42px;
+      color: #74cac7;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    h1 {
+      max-width: 1500px;
+      margin: 12px 0 16px;
+      font-size: 72px;
+      line-height: 1.12;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #d5e0e4;
+      font-size: 31px;
+      font-weight: 600;
+    }
+
+    .headline-conclusion {
+      margin-top: 38px;
+      padding: 25px 30px;
+      color: #f6fbfb;
+      background: var(--deep-2);
+      border-left: 8px solid #67c8c3;
+      font-size: 28px;
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .headline-conclusion span {
+      color: #8ed6d2;
+    }
+
+    .header-facts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 28px;
+      border-top: 1px solid #52636b;
+      border-bottom: 1px solid #52636b;
+    }
+
+    .header-fact {
+      min-height: 94px;
+      padding: 16px 20px;
+      border-right: 1px solid #52636b;
+    }
+
+    .header-fact:last-child {
+      border-right: 0;
+    }
+
+    .header-fact b,
+    .header-fact span {
+      display: block;
+    }
+
+    .header-fact b {
+      color: #fff;
+      font-size: 22px;
+    }
+
+    .header-fact span {
+      margin-top: 4px;
+      color: #b9c7cd;
+      font-size: 17px;
+    }
+
+    section {
+      padding: 62px 0 68px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section.alt {
+      background: var(--wash);
+    }
+
+    section.dark-band {
+      color: #fff;
+      background: #223139;
+      border-bottom: 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 34px;
+    }
+
+    .section-no {
+      padding-top: 8px;
+      color: var(--teal);
+      border-top: 4px solid var(--teal);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .dark-band .section-no {
+      color: #75cbc7;
+      border-top-color: #75cbc7;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 45px;
+      line-height: 1.24;
+      font-weight: 900;
+    }
+
+    .section-summary {
+      max-width: 1260px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 22px;
+    }
+
+    .dark-band .section-summary {
+      color: #c4d0d5;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .executive-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr 1fr 1fr;
+      border-top: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+    }
+
+    .executive-item {
+      min-height: 220px;
+      padding: 24px 24px 26px;
+      border-right: 1px solid var(--line);
+    }
+
+    .executive-item:last-child {
+      border-right: 0;
+    }
+
+    .executive-item .label {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .executive-item strong {
+      display: block;
+      margin-top: 9px;
+      font-size: 29px;
+      line-height: 1.3;
+    }
+
+    .executive-item p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .executive-item.verdict strong {
+      color: var(--green);
+    }
+
+    .executive-item.defect strong {
+      color: var(--red);
+    }
+
+    .management-line {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      margin-top: 28px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .management-line b {
+      padding: 20px 22px;
+      color: #fff;
+      background: var(--teal);
+      font-size: 21px;
+    }
+
+    .management-line span {
+      padding: 20px 24px;
+      background: var(--teal-soft);
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .architecture {
+      padding: 32px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .arch-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .arch-title span {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .arch-chain {
+      display: grid;
+      grid-template-columns: 1fr 52px 1fr 52px 1fr 52px 1fr 52px 1fr 52px 1fr;
+      align-items: stretch;
+      margin-top: 26px;
+    }
+
+    .arch-node {
+      min-height: 144px;
+      padding: 18px 15px;
+      background: var(--gray-soft);
+      border-top: 5px solid var(--blue);
+    }
+
+    .arch-node b,
+    .arch-node span {
+      display: block;
+    }
+
+    .arch-node b {
+      font-size: 21px;
+    }
+
+    .arch-node span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .arch-node.kernel {
+      background: var(--teal-soft);
+      border-top-color: var(--teal);
+    }
+
+    .arch-node.physical {
+      background: var(--amber-soft);
+      border-top-color: var(--amber);
+    }
+
+    .arch-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--line-dark);
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .feedback {
+      display: grid;
+      grid-template-columns: 245px 1fr 52px 1fr 52px 1fr;
+      align-items: stretch;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .feedback-label {
+      padding: 18px 20px;
+      color: #fff;
+      background: var(--green);
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .feedback-node {
+      min-height: 108px;
+      padding: 16px 18px;
+      background: var(--green-soft);
+      border-left: 4px solid var(--green);
+    }
+
+    .feedback-node b,
+    .feedback-node span {
+      display: block;
+    }
+
+    .feedback-node span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .repair-loop {
+      display: grid;
+      grid-template-columns: 245px 1fr 52px 1fr 52px 1fr;
+      align-items: stretch;
+      margin-top: 14px;
+    }
+
+    .repair-label {
+      padding: 18px 20px;
+      color: #fff;
+      background: var(--red);
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .repair-node {
+      min-height: 108px;
+      padding: 16px 18px;
+      background: var(--red-soft);
+      border-left: 4px solid var(--red);
+    }
+
+    .repair-node b,
+    .repair-node span {
+      display: block;
+    }
+
+    .repair-node span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 28px;
+      border-top: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+    }
+
+    .boundary {
+      min-height: 142px;
+      padding: 20px 24px;
+      border-right: 1px solid var(--line);
+    }
+
+    .boundary:last-child {
+      border-right: 0;
+    }
+
+    .boundary b,
+    .boundary span {
+      display: block;
+    }
+
+    .boundary b {
+      font-size: 21px;
+    }
+
+    .boundary span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .subhead {
+      margin: 40px 0 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--ink);
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .source-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line);
+    }
+
+    .source {
+      min-height: 98px;
+      padding: 15px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .source:last-child {
+      border-right: 0;
+    }
+
+    .source b,
+    .source span {
+      display: block;
+    }
+
+    .source b {
+      font-size: 19px;
+    }
+
+    .source span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .normalization-flow {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr 42px 1fr 42px 1fr 42px 1fr;
+      align-items: stretch;
+      margin-top: 24px;
+    }
+
+    .norm-step {
+      min-height: 156px;
+      padding: 18px;
+      background: #fff;
+      border-top: 5px solid var(--teal);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .norm-step .num {
+      color: var(--teal);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .norm-step b,
+    .norm-step span {
+      display: block;
+    }
+
+    .norm-step b {
+      margin-top: 5px;
+      font-size: 20px;
+    }
+
+    .norm-step span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .norm-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--line-dark);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .data-contract {
+      display: grid;
+      grid-template-columns: 150px 210px 250px 230px 230px 230px 260px;
+      margin-top: 18px;
+      border-top: 1px solid var(--line-dark);
+      border-left: 1px solid var(--line);
+    }
+
+    .data-contract > div {
+      min-height: 64px;
+      padding: 12px 13px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .data-contract .head {
+      min-height: 56px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .data-contract .object {
+      font-weight: 900;
+    }
+
+    .status {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .fact-judgment {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 26px;
+    }
+
+    .fact-side,
+    .judgment-side {
+      padding: 22px 24px;
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--green);
+    }
+
+    .judgment-side {
+      border-top-color: var(--amber);
+    }
+
+    .fact-side h3,
+    .judgment-side h3 {
+      margin-bottom: 12px;
+    }
+
+    .rule-line {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .rule-line b {
+      color: var(--muted);
+    }
+
+    .snapshot-warning {
+      margin-top: 22px;
+      padding: 20px 24px;
+      color: #70480b;
+      background: var(--amber-soft);
+      border-left: 7px solid var(--amber);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .goal-contract {
+      display: grid;
+      grid-template-columns: 270px 1fr 1fr;
+      border: 1px solid var(--line);
+    }
+
+    .goal-contract > div {
+      min-height: 110px;
+      padding: 18px 22px;
+      border-right: 1px solid var(--line);
+    }
+
+    .goal-contract > div:last-child {
+      border-right: 0;
+    }
+
+    .goal-contract .goal-title {
+      color: #fff;
+      background: var(--deep-2);
+    }
+
+    .goal-contract b,
+    .goal-contract span {
+      display: block;
+    }
+
+    .goal-contract b {
+      font-size: 21px;
+    }
+
+    .goal-contract span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .goal-contract .goal-title span {
+      color: #c9d5da;
+    }
+
+    .tree-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 26px;
+      margin-top: 28px;
+    }
+
+    .tree-panel {
+      padding: 24px 26px 26px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--red);
+    }
+
+    .tree-panel.correct {
+      border-top-color: var(--green);
+    }
+
+    .tree-panel .panel-label {
+      color: var(--red);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .tree-panel.correct .panel-label {
+      color: var(--green);
+    }
+
+    .tree-panel h3 {
+      margin-top: 5px;
+    }
+
+    .tree {
+      margin-top: 18px;
+    }
+
+    .tree-node {
+      position: relative;
+      margin: 0 0 18px 42px;
+      padding: 14px 18px;
+      background: var(--gray-soft);
+      border-left: 5px solid var(--blue);
+    }
+
+    .tree-node::before {
+      content: "";
+      position: absolute;
+      left: -29px;
+      top: -19px;
+      width: 23px;
+      height: 42px;
+      border-left: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+    }
+
+    .tree-node.root {
+      margin-left: 0;
+      border-left-color: var(--teal);
+    }
+
+    .tree-node.root::before {
+      display: none;
+    }
+
+    .tree-node.repair {
+      margin-left: 82px;
+      background: var(--red-soft);
+      border-left-color: var(--red);
+    }
+
+    .tree-panel.correct .tree-node.repair {
+      background: var(--green-soft);
+      border-left-color: var(--green);
+    }
+
+    .tree-node b,
+    .tree-node span {
+      display: block;
+    }
+
+    .tree-node span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .decision-lane {
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .lane-head {
+      padding: 18px 22px;
+      color: #fff;
+      background: var(--red);
+    }
+
+    .decision-lane.correct .lane-head {
+      background: var(--green);
+    }
+
+    .lane-head b,
+    .lane-head span {
+      display: block;
+    }
+
+    .lane-head b {
+      font-size: 25px;
+    }
+
+    .lane-head span {
+      margin-top: 3px;
+      color: #f5d8d5;
+      font-size: 16px;
+    }
+
+    .decision-lane.correct .lane-head span {
+      color: #d7eee0;
+    }
+
+    .lane-step {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      min-height: 98px;
+      border-top: 1px solid var(--line);
+    }
+
+    .lane-step .index {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--red);
+      background: var(--red-soft);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .decision-lane.correct .lane-step .index {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .lane-step .body {
+      padding: 13px 17px;
+    }
+
+    .lane-step b,
+    .lane-step span {
+      display: block;
+    }
+
+    .lane-step b {
+      font-size: 19px;
+    }
+
+    .lane-step span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .failure-boundary {
+      margin-top: 26px;
+      padding: 23px 28px;
+      color: #fff;
+      background: var(--deep-2);
+      border-left: 8px solid var(--red);
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .failure-boundary span {
+      color: #f19a93;
+    }
+
+    .evidence-layout {
+      display: grid;
+      grid-template-columns: 1030px 1fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .scene {
+      background: #f1f3f2;
+      border: 1px solid var(--line-dark);
+    }
+
+    .scene svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .evidence-list {
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .evidence-row {
+      min-height: 128px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .evidence-row:last-child {
+      border-bottom: 0;
+    }
+
+    .evidence-row .tag {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .evidence-row b,
+    .evidence-row span {
+      display: block;
+    }
+
+    .evidence-row b {
+      margin-top: 3px;
+      font-size: 22px;
+    }
+
+    .evidence-row span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .evidence-row.pass b {
+      color: var(--green);
+    }
+
+    code {
+      padding: 2px 5px;
+      color: #1e4e66;
+      background: var(--blue-soft);
+      border: 1px solid #c7d8e5;
+      font-family: Consolas, "Microsoft YaHei", monospace;
+      font-size: 0.92em;
+    }
+
+    .root-chain {
+      display: grid;
+      grid-template-columns: 1fr 54px 1fr 54px 1fr 54px 1fr;
+      align-items: stretch;
+    }
+
+    .root-node {
+      min-height: 180px;
+      padding: 20px;
+      background: #fff;
+      border-top: 6px solid var(--amber);
+    }
+
+    .root-node:nth-child(5),
+    .root-node:nth-child(7) {
+      border-top-color: var(--red);
+    }
+
+    .root-node .level {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .root-node b,
+    .root-node span {
+      display: block;
+    }
+
+    .root-node b {
+      margin-top: 6px;
+      font-size: 21px;
+    }
+
+    .root-node span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .root-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--line-dark);
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .locator {
+      display: grid;
+      grid-template-columns: 245px 1fr;
+      margin-top: 26px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .locator b {
+      padding: 20px 22px;
+      color: #fff;
+      background: var(--deep-2);
+    }
+
+    .locator div {
+      padding: 18px 22px;
+      background: #fff;
+      font-size: 17px;
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 30px;
+      border-top: 2px solid var(--line-dark);
+      border-bottom: 2px solid var(--line-dark);
+    }
+
+    .impact {
+      min-height: 164px;
+      padding: 19px 22px;
+      border-right: 1px solid var(--line);
+    }
+
+    .impact:last-child {
+      border-right: 0;
+    }
+
+    .impact b,
+    .impact span {
+      display: block;
+    }
+
+    .impact b {
+      font-size: 21px;
+    }
+
+    .impact span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .impact .risk {
+      color: var(--red);
+    }
+
+    .remediation-table {
+      display: grid;
+      grid-template-columns: 110px 300px 1fr 1.05fr;
+      border-top: 1px solid #718087;
+      border-left: 1px solid #718087;
+    }
+
+    .remediation-table > div {
+      min-height: 72px;
+      padding: 13px 16px;
+      border-right: 1px solid #718087;
+      border-bottom: 1px solid #718087;
+      font-size: 17px;
+    }
+
+    .remediation-table .head {
+      min-height: 58px;
+      color: #fff;
+      background: #31434c;
+      font-weight: 900;
+    }
+
+    .priority {
+      font-weight: 900;
+    }
+
+    .priority.p0 {
+      color: #ffb0a9;
+      background: #60332f;
+    }
+
+    .priority.p1 {
+      color: #ffe2a7;
+      background: #5d4a28;
+    }
+
+    .acceptance {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 28px;
+      background: #53636b;
+      border: 1px solid #53636b;
+    }
+
+    .acceptance-item {
+      min-height: 142px;
+      padding: 20px 22px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .acceptance-item b,
+    .acceptance-item span {
+      display: block;
+    }
+
+    .acceptance-item b {
+      color: var(--green);
+      font-size: 21px;
+    }
+
+    .acceptance-item span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .decision-close {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .close-verdict {
+      padding-left: 24px;
+      border-left: 8px solid #73cbc7;
+    }
+
+    .close-verdict h2 {
+      color: #fff;
+      font-size: 42px;
+    }
+
+    .close-verdict p {
+      margin-top: 15px;
+      color: #c9d6db;
+      font-size: 22px;
+    }
+
+    .status-table {
+      border-top: 1px solid #5a6b73;
+      border-bottom: 1px solid #5a6b73;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      padding: 13px 0;
+      border-bottom: 1px solid #465860;
+      font-size: 17px;
+    }
+
+    .status-row:last-child {
+      border-bottom: 0;
+    }
+
+    .status-row b {
+      color: #8fd5d1;
+    }
+
+    .status-row span {
+      color: #d2dde1;
+    }
+
+    footer {
+      padding: 32px 0 36px;
+      color: #536169;
+      background: #edf0f1;
+      border-top: 1px solid var(--line);
+      font-size: 15px;
+    }
+
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    @media print {
+      html,
+      body {
+        background: #fff;
+      }
+
+      section,
+      header {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="inner">
+        <div class="report-meta">
+          <span><strong>技术复盘</strong> / 规划完备性与递归修复决策</span>
+          <span>案例：绿球放入空盘子　|　2026-09-01</span>
+        </div>
+
+        <div class="report-kicker">递归任务树 / 工程复盘</div>
+        <h1>递归任务系统规划复盘</h1>
+        <p class="subtitle">为何系统选择搬走黄箱，而同一场景实际存在桌侧绕行路径</p>
+
+        <div class="headline-conclusion">
+          <span>结论：</span>
+          黄箱已进入障碍地图，碰撞判断也有效；问题发生在路径搜索之前。
+          接近位生成没有覆盖桌侧与桌后，导致系统把“当前候选失败”错误升级为“需要改变环境”。
+        </div>
+
+        <div class="header-facts">
+          <div class="header-fact">
+            <b>空间结论</b>
+            <span>可从桌子右侧绕到桌后</span>
+          </div>
+          <div class="header-fact">
+            <b>问题类型</b>
+            <span>规划候选覆盖不足</span>
+          </div>
+          <div class="header-fact">
+            <b>安全结论</b>
+            <span>未发现碰撞检测失效</span>
+          </div>
+          <div class="header-fact">
+            <b>当前状态</b>
+            <span>文档已纠正，规划器代码待改</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">01 / 管理结论</div>
+          <div>
+            <h2>管理结论</h2>
+            <p class="section-summary">
+              本次任务最终完成，但过程包含一次不必要的环境改造。
+              缺陷不在机器人是否会避障，而在系统是否把可行方向完整交给路径规划器。
+            </p>
+          </div>
+        </div>
+
+        <div class="executive-grid">
+          <div class="executive-item verdict">
+            <div class="label">正确决策</div>
+            <strong>保留黄箱原位，右侧绕行</strong>
+            <p>绕到桌后接近红球，完成清盘后返回绿球主任务。</p>
+          </div>
+          <div class="executive-item defect">
+            <div class="label">实际决策</div>
+            <strong>先搬黄箱，再搬红球</strong>
+            <p>系统在两个正面候选失败后直接插入黄箱搬运子任务。</p>
+          </div>
+          <div class="executive-item">
+            <div class="label">故障边界</div>
+            <strong>接近位生成层</strong>
+            <p>桌后合法站位在正式路径搜索前被保守区域过滤。</p>
+          </div>
+          <div class="executive-item">
+            <div class="label">工程影响</div>
+            <strong>效率与可靠性</strong>
+            <p>增加物体搬运、世界状态变化、计划失效与重新规划。</p>
+          </div>
+        </div>
+
+        <div class="management-line">
+          <b>建议决策</b>
+          <span>
+            将“候选覆盖证明”和“绕行与环境改造的代价比较”设为触发搬障碍物之前的强制条件。
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">02 / 系统架构</div>
+          <div>
+            <h2>系统架构与责任边界</h2>
+            <p class="section-summary">
+              任务树负责控制流，世界快照负责现实事实，规划工件负责几何方案，动作网关负责物理副作用。
+              四类状态分开管理，才能定位“任务失败、规划失败、执行失败、验证失败”分别发生在哪里。
+            </p>
+          </div>
+        </div>
+
+        <div class="architecture">
+          <div class="arch-title">
+            <h3>主执行链</h3>
+            <span>从自然语言目标到单次物理动作</span>
+          </div>
+
+          <div class="arch-chain">
+            <div class="arch-node">
+              <b>任务输入</b>
+              <span>明确目标对象、目标容器、前置条件与完成条件。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+              <b>任务规范化</b>
+              <span>把自然语言整理为可验证的任务程序。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node kernel">
+              <b>任务树内核</b>
+              <span>维护执行栈、节点状态、递归子任务与返回位置。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node">
+              <b>条件与规划</b>
+              <span>读取快照，选择对象，生成导航、抓取和搬运方案。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node physical">
+              <b>动作安全网关</b>
+              <span>检查计划新鲜度、资源、前置条件，只放行一次动作。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node physical">
+              <b>机器人与现场</b>
+              <span>移动、抓取、释放，并产生新的观察证据。</span>
+            </div>
+          </div>
+
+          <div class="feedback">
+            <div class="feedback-label">观察与验证闭环</div>
+            <div class="feedback-node">
+              <b>观察归一化</b>
+              <span>合并视觉、夹爪、底盘与安全状态。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="feedback-node">
+              <b>世界快照</b>
+              <span>形成不可变、带版本号的现实事实集合。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="feedback-node">
+              <b>独立验证</b>
+              <span>只依据最新快照判断完成、重试或重新规划。</span>
+            </div>
+          </div>
+
+          <div class="repair-loop">
+            <div class="repair-label">递归修复闭环</div>
+            <div class="repair-node">
+              <b>结构化诊断</b>
+              <span>记录哪个条件失败、证据来自哪一版世界。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="repair-node">
+              <b>修复提案</b>
+              <span>生成受约束的临时子任务，不直接修改现实。</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="repair-node">
+              <b>挂载并返回</b>
+              <span>子任务成功后回到原失败节点继续执行。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="boundary-grid">
+          <div class="boundary">
+            <b>任务树唯一写入者</b>
+            <span>只有任务树内核可以改变节点状态、挂载修复子树和推进执行栈。</span>
+          </div>
+          <div class="boundary">
+            <b>现实事实唯一来源</b>
+            <span>只有新观察可以生成新世界快照；规划结果不能宣称物体已经移动。</span>
+          </div>
+          <div class="boundary">
+            <b>物理动作唯一入口</b>
+            <span>规划器和修复器不能直接控制机器人，所有动作必须经过安全网关。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">03 / 世界快照</div>
+          <div>
+            <h2>世界快照如何规范化构建</h2>
+            <p class="section-summary">
+              世界快照不是画面截图，也不是规划结论的集合。
+              它是同一时刻、同一坐标体系下，经过身份合并、冲突消解和证据标记后冻结的一版事实数据。
+            </p>
+          </div>
+        </div>
+
+        <div class="subhead">输入来源</div>
+        <div class="source-row">
+          <div class="source">
+            <b>物体观察</b>
+            <span>类别、颜色、形状、位置和可见性</span>
+          </div>
+          <div class="source">
+            <b>空间关系</b>
+            <span>在地面、桌面、盘内或被夹持</span>
+          </div>
+          <div class="source">
+            <b>机器人状态</b>
+            <span>底盘位姿、关节、夹爪占用状态</span>
+          </div>
+          <div class="source">
+            <b>固定环境</b>
+            <span>桌子、挡板、边界和可通行区域</span>
+          </div>
+          <div class="source">
+            <b>安全与时间</b>
+            <span>碰撞、急停、时间戳和来源可信度</span>
+          </div>
+        </div>
+
+        <div class="normalization-flow">
+          <div class="norm-step">
+            <div class="num">步骤 1</div>
+            <b>时间对齐</b>
+            <span>只合并时间窗口一致的观察，避免旧画面与新机器人状态混用。</span>
+          </div>
+          <div class="norm-arrow">→</div>
+          <div class="norm-step">
+            <div class="num">步骤 2</div>
+            <b>身份合并</b>
+            <span>依据属性、位置连续性和历史标识，把多次观察归到同一实体。</span>
+          </div>
+          <div class="norm-arrow">→</div>
+          <div class="norm-step">
+            <div class="num">步骤 3</div>
+            <b>坐标与单位统一</b>
+            <span>转换到统一世界坐标，统一长度、角度、朝向和几何表达。</span>
+          </div>
+          <div class="norm-arrow">→</div>
+          <div class="norm-step">
+            <div class="num">步骤 4</div>
+            <b>关系与冲突处理</b>
+            <span>推导确定的支撑或包含关系；矛盾项按新鲜度和证据质量处理。</span>
+          </div>
+          <div class="norm-arrow">→</div>
+          <div class="norm-step">
+            <div class="num">步骤 5</div>
+            <b>冻结版本</b>
+            <span>形成不可变快照，记录版本号、来源和可信状态，供后续模块读取。</span>
+          </div>
+        </div>
+
+        <div class="subhead">第 1 版快照在本任务中的实例</div>
+        <div class="data-contract">
+          <div class="head">实体</div>
+          <div class="head">类型与属性</div>
+          <div class="head">位姿 / 参考系</div>
+          <div class="head">确定关系</div>
+          <div class="head">碰撞与操作属性</div>
+          <div class="head">证据</div>
+          <div class="head">本层允许得出的事实</div>
+
+          <div class="object">绿球</div>
+          <div>绿色、球体、可搬动</div>
+          <div>地面坐标，世界参考系</div>
+          <div>由地面支撑</div>
+          <div>参与碰撞，可抓取</div>
+          <div class="status">视觉确认</div>
+          <div>绿球当前在地面</div>
+
+          <div class="object">红球</div>
+          <div>红色、球体、可搬动</div>
+          <div>盘子内部，世界参考系</div>
+          <div>被盘子包含</div>
+          <div>参与碰撞，可抓取</div>
+          <div class="status">视觉与关系确认</div>
+          <div>红球当前在盘内</div>
+
+          <div class="object">盘子</div>
+          <div>容器、位于桌面</div>
+          <div>桌面坐标，世界参考系</div>
+          <div>由桌面支撑</div>
+          <div>放置目标，不可穿越</div>
+          <div class="status">视觉确认</div>
+          <div>盘子当前包含红球</div>
+
+          <div class="object">黄箱</div>
+          <div>黄色、箱体、可搬动</div>
+          <div>桌前正面区域</div>
+          <div>由地面支撑</div>
+          <div>参与底盘碰撞</div>
+          <div class="status">视觉确认</div>
+          <div>黄箱在桌前，不等于全局无路</div>
+
+          <div class="object">机器人</div>
+          <div>移动底盘、机械臂、夹爪</div>
+          <div>初始底盘位姿</div>
+          <div>夹爪未持物</div>
+          <div>安全状态正常</div>
+          <div class="status">本体状态确认</div>
+          <div>允许进入规划与执行检查</div>
+        </div>
+
+        <div class="fact-judgment">
+          <div class="fact-side">
+            <h3>世界快照保存的内容</h3>
+            <div class="rule-line">
+              <b>事实</b>
+              <span>红球在盘内，黄箱在桌前，绿球在地面，夹爪为空。</span>
+            </div>
+            <div class="rule-line">
+              <b>版本</b>
+              <span>所有规划工件必须声明自己依据的是哪一版世界。</span>
+            </div>
+            <div class="rule-line">
+              <b>证据</b>
+              <span>每条事实保留观察来源、时间和可信状态。</span>
+            </div>
+          </div>
+          <div class="judgment-side">
+            <h3>下游模块负责的判断</h3>
+            <div class="rule-line">
+              <b>条件检查</b>
+              <span>由“红球在盘内”推出“盘子当前不空”。</span>
+            </div>
+            <div class="rule-line">
+              <b>路线规划</b>
+              <span>判断某个接近位、某条路径是否与黄箱冲突。</span>
+            </div>
+            <div class="rule-line">
+              <b>方案选择</b>
+              <span>比较桌侧绕行与搬箱，不得把局部失败写回世界事实。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="snapshot-warning">
+          数据边界：世界快照回答“物体在哪里”；规划器回答“从哪里接近、哪条路线可走”。
+          “黄箱挡住全部路线”不属于快照事实，除非规划层提供完整覆盖与不可达证据。
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">04 / 递归任务</div>
+          <div>
+            <h2>任务递归与实际分支</h2>
+            <p class="section-summary">
+              “盘子不空”是合法的递归修复条件；“搬黄箱”则来自一次不完整的路线判断。
+              两者都表现为临时子任务，但证据强度不同。
+            </p>
+          </div>
+        </div>
+
+        <div class="goal-contract">
+          <div class="goal-title">
+            <b>主任务</b>
+            <span>把绿球放入空盘子</span>
+          </div>
+          <div>
+            <b>开始条件</b>
+            <span>目标盘子为空；绿球可定位、可抓取；机器人安全状态正常。</span>
+          </div>
+          <div>
+            <b>完成条件</b>
+            <span>绿球位于盘内；夹爪为空；结果由最新世界快照确认。</span>
+          </div>
+        </div>
+
+        <div class="tree-compare">
+          <div class="tree-panel">
+            <div class="panel-label">本次实际执行树</div>
+            <h3>候选失败被升级为环境改造</h3>
+            <div class="tree">
+              <div class="tree-node root">
+                <b>主任务：绿球入盘</b>
+                <span>盘子不空，暂停主任务。</span>
+              </div>
+              <div class="tree-node">
+                <b>临时任务：将红球移出盘子</b>
+                <span>该修复有直接世界事实支持。</span>
+              </div>
+              <div class="tree-node repair">
+                <b>第二层任务：搬走黄箱</b>
+                <span>两个正面候选失败后插入，未比较桌侧绕行。</span>
+              </div>
+              <div class="tree-node">
+                <b>返回红球任务，再返回绿球任务</b>
+                <span>最终成功，但经历了额外环境变化。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tree-panel correct">
+            <div class="panel-label">完整规划应形成的执行树</div>
+            <h3>保留必要修复，删除不必要分支</h3>
+            <div class="tree">
+              <div class="tree-node root">
+                <b>主任务：绿球入盘</b>
+                <span>盘子不空，暂停主任务。</span>
+              </div>
+              <div class="tree-node">
+                <b>临时任务：将红球移出盘子</b>
+                <span>继续生成桌前、左右侧和桌后接近位。</span>
+              </div>
+              <div class="tree-node repair">
+                <b>执行方案：从右侧绕到桌后</b>
+                <span>底盘路线与机械臂抓取均通过，无需搬箱。</span>
+              </div>
+              <div class="tree-node">
+                <b>返回绿球任务</b>
+                <span>基于红球移走后的新快照重新规划。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">05 / 故障链</div>
+          <div>
+            <h2>错误决策链发生在哪里</h2>
+            <p class="section-summary">
+              两条链使用同一张障碍地图。差异不在避障算法，而在路径规划器收到的候选接近位是否完整。
+            </p>
+          </div>
+        </div>
+
+        <div class="decision-grid">
+          <div class="decision-lane">
+            <div class="lane-head">
+              <b>实际链路</b>
+              <span>从局部候选失败到搬箱</span>
+            </div>
+            <div class="lane-step">
+              <div class="index">1</div>
+              <div class="body">
+                <b>建立障碍地图</b>
+                <span>桌子、固定挡板和黄箱均进入碰撞模型。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">2</div>
+              <div class="body">
+                <b>生成接近位</b>
+                <span>经过保守边界与机械臂距离筛选后，只剩两个正面位置。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">3</div>
+              <div class="body">
+                <b>正面位置碰撞</b>
+                <span>两个位置均与黄箱的底盘安全距离冲突。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">4</div>
+              <div class="body">
+                <b>错误升级诊断</b>
+                <span>“已生成候选均失败”被等同为“路线被黄箱阻断”。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">5</div>
+              <div class="body">
+                <b>挂载搬箱子任务</b>
+                <span>系统改变环境后重新计算正面路线。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="decision-lane correct">
+            <div class="lane-head">
+              <b>应有链路</b>
+              <span>从候选覆盖到方案比较</span>
+            </div>
+            <div class="lane-step">
+              <div class="index">1</div>
+              <div class="body">
+                <b>建立同一障碍地图</b>
+                <span>黄箱仍然是障碍物，不需要从模型中忽略。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">2</div>
+              <div class="body">
+                <b>覆盖目标四周</b>
+                <span>桌前、左侧、右侧、桌后分别生成接近位和拒绝原因。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">3</div>
+              <div class="body">
+                <b>逐候选检查底盘路线</b>
+                <span>桌后偏右接近位可由桌子右侧绕行到达。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">4</div>
+              <div class="body">
+                <b>检查停靠与抓取</b>
+                <span>停靠无碰撞，机械臂可到达红球。</span>
+              </div>
+            </div>
+            <div class="lane-step">
+              <div class="index">5</div>
+              <div class="body">
+                <b>比较方案代价</b>
+                <span>绕行不改动环境，应优先于额外搬运黄箱。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="failure-boundary">
+          <span>关键判断：</span>
+          路径规划器没有拒绝桌侧路线，它从未收到这个接近位。
+          因此本问题属于候选生成与修复触发条件缺陷，不属于 A* 或碰撞检测失效。
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">06 / 路线证据</div>
+          <div>
+            <h2>桌侧绕行的复核证据</h2>
+            <p class="section-summary">
+              在同一初始场景中补充桌后偏右接近位，底盘与机械臂检查均通过。
+              黄箱保持原位，说明它只阻挡正面短路，不构成全局不可达。
+            </p>
+          </div>
+        </div>
+
+        <div class="evidence-layout">
+          <div class="scene">
+            <svg viewBox="0 0 1030 760" role="img" aria-label="机器人从桌子右侧绕到桌后接近红球">
+              <rect x="1" y="1" width="1028" height="758" fill="#f1f3f2" stroke="#8d999f" stroke-width="2"/>
+              <text x="34" y="46" fill="#26343b" font-size="24" font-weight="700">俯视图：正面短路受阻，右侧绕行可达</text>
+              <text x="34" y="76" fill="#66747b" font-size="16">上方为桌后，下方为机器人起点</text>
+
+              <rect x="215" y="82" width="600" height="330" fill="none" stroke="#a96d12" stroke-width="4" stroke-dasharray="13 9"/>
+              <text x="235" y="112" fill="#8a590d" font-size="17" font-weight="700">额外外扩 0.25 m 的保守包络</text>
+
+              <rect x="315" y="150" width="400" height="158" rx="3" fill="#c6b394" stroke="#6c5c43" stroke-width="4"/>
+              <text x="480" y="182" fill="#4e4436" font-size="21" font-weight="700">桌面</text>
+
+              <ellipse cx="580" cy="238" rx="88" ry="31" fill="#fbfcfc" stroke="#596d77" stroke-width="5"/>
+              <ellipse cx="580" cy="238" rx="61" ry="20" fill="#e2e9ec" stroke="#87979f" stroke-width="2"/>
+              <circle cx="580" cy="227" r="23" fill="#d24c43" stroke="#89342e" stroke-width="4"/>
+              <text x="612" y="225" fill="#9e3e37" font-size="17" font-weight="700">红球</text>
+
+              <rect x="220" y="308" width="102" height="288" fill="#9ca7ad" stroke="#58656c" stroke-width="3"/>
+              <rect x="708" y="308" width="102" height="288" fill="#9ca7ad" stroke="#58656c" stroke-width="3"/>
+              <text x="220" y="624" fill="#5e6b72" font-size="16">固定挡板</text>
+              <text x="716" y="624" fill="#5e6b72" font-size="16">固定挡板</text>
+
+              <rect x="468" y="463" width="94" height="86" rx="3" fill="#dda82f" stroke="#8c610d" stroke-width="5"/>
+              <text x="445" y="577" fill="#8c610d" font-size="18" font-weight="700">黄箱：保持原位</text>
+
+              <circle cx="515" cy="410" r="23" fill="#faecea" stroke="#b5483f" stroke-width="5"/>
+              <line x1="500" y1="395" x2="530" y2="425" stroke="#b5483f" stroke-width="6"/>
+              <line x1="530" y1="395" x2="500" y2="425" stroke="#b5483f" stroke-width="6"/>
+              <circle cx="413" cy="394" r="23" fill="#faecea" stroke="#b5483f" stroke-width="5"/>
+              <line x1="398" y1="379" x2="428" y2="409" stroke="#b5483f" stroke-width="6"/>
+              <line x1="428" y1="379" x2="398" y2="409" stroke="#b5483f" stroke-width="6"/>
+              <path d="M515 700 L515 566 L515 440" fill="none" stroke="#b5483f" stroke-width="8" stroke-dasharray="14 10"/>
+              <text x="336" y="360" fill="#a03e36" font-size="18" font-weight="700">两个正面候选均失败</text>
+
+              <path d="M515 700 C620 716 760 700 868 615 C908 583 916 517 914 445 L914 230 C900 133 820 84 715 82 L658 82"
+                    fill="none" stroke="#2f7950" stroke-width="9"/>
+              <polygon points="646,82 672,68 672,96" fill="#2f7950"/>
+
+              <g fill="#ffffff" stroke="#2f7950" stroke-width="4">
+                <circle cx="555" cy="702" r="8"/>
+                <circle cx="612" cy="698" r="8"/>
+                <circle cx="672" cy="687" r="8"/>
+                <circle cx="730" cy="666" r="8"/>
+                <circle cx="786" cy="636" r="8"/>
+                <circle cx="836" cy="596" r="8"/>
+                <circle cx="875" cy="544" r="8"/>
+                <circle cx="905" cy="486" r="8"/>
+                <circle cx="914" cy="423" r="8"/>
+                <circle cx="914" cy="350" r="8"/>
+                <circle cx="910" cy="278" r="8"/>
+                <circle cx="892" cy="202" r="8"/>
+                <circle cx="831" cy="119" r="8"/>
+                <circle cx="716" cy="83" r="8"/>
+              </g>
+
+              <text x="778" y="668" fill="#276842" font-size="18" font-weight="700">14 个底盘轨迹点</text>
+              <text x="831" y="398" fill="#276842" font-size="18" font-weight="700" transform="rotate(-90 831 398)">桌子右侧可通行</text>
+
+              <circle cx="658" cy="82" r="25" fill="#eaf4ee" stroke="#2f7950" stroke-width="5"/>
+              <path d="M658 108 L603 195" fill="none" stroke="#2f7950" stroke-width="6"/>
+              <polygon points="594,207 596,181 617,194" fill="#2f7950"/>
+              <text x="473" y="61" fill="#276842" font-size="18" font-weight="700">桌后偏右接近位：可停、可抓</text>
+
+              <g transform="translate(515,700)">
+                <rect x="-48" y="-36" width="96" height="72" rx="3" fill="#2c638d" stroke="#184766" stroke-width="4"/>
+                <circle cx="0" cy="-47" r="18" fill="#d8e9f4" stroke="#184766" stroke-width="4"/>
+                <line x1="-18" y1="5" x2="-59" y2="-15" stroke="#184766" stroke-width="8"/>
+                <line x1="18" y1="5" x2="59" y2="-15" stroke="#184766" stroke-width="8"/>
+              </g>
+            </svg>
+          </div>
+
+          <div class="evidence-list">
+            <div class="evidence-row">
+              <div class="tag">补测接近位</div>
+              <b><code>x=0.6523</code> <code>y=0.5177</code></b>
+              <span>朝向 <code>-1.6581 rad</code>，位于桌后稍偏右。</span>
+            </div>
+            <div class="evidence-row pass">
+              <div class="tag">底盘路线</div>
+              <b>通过</b>
+              <span>从桌前起点绕桌子右侧，共 14 个轨迹点。</span>
+            </div>
+            <div class="evidence-row pass">
+              <div class="tag">停靠碰撞检查</div>
+              <b>通过</b>
+              <span>最终底盘位置不与桌子、挡板或黄箱碰撞。</span>
+            </div>
+            <div class="evidence-row pass">
+              <div class="tag">机械臂抓取检查</div>
+              <b>通过</b>
+              <span>停稳后机械臂可到达并抓取盘中的红球。</span>
+            </div>
+            <div class="evidence-row">
+              <div class="tag">环境改动</div>
+              <b>无</b>
+              <span>复核过程中黄箱保持原位，不需要先搬走。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">07 / 根因定位</div>
+          <div>
+            <h2>根因定位与影响</h2>
+            <p class="section-summary">
+              直接原因是几何筛选过保守；系统性原因是候选生成没有覆盖契约，
+              修复触发也没有要求“全方向已检查”的证据。
+            </p>
+          </div>
+        </div>
+
+        <div class="root-chain">
+          <div class="root-node">
+            <div class="level">现象</div>
+            <b>系统搬走黄箱</b>
+            <span>任务最终成功，但选择了改变环境的分支。</span>
+          </div>
+          <div class="root-arrow">→</div>
+          <div class="root-node">
+            <div class="level">直接原因</div>
+            <b>仅保留正面候选</b>
+            <span>桌侧与桌后接近位未进入路径比较。</span>
+          </div>
+          <div class="root-arrow">→</div>
+          <div class="root-node">
+            <div class="level">代码原因</div>
+            <b>桌体外扩区域过大</b>
+            <span>桌子四周额外外扩 0.25 m，使合法站位在路径搜索前被排除。</span>
+          </div>
+          <div class="root-arrow">→</div>
+          <div class="root-node">
+            <div class="level">架构原因</div>
+            <b>缺少候选完备性证明</b>
+            <span>“全部已生成候选失败”可以直接触发搬障碍物修复。</span>
+          </div>
+        </div>
+
+        <div class="locator">
+          <b>工程定位</b>
+          <div>
+            <code>D:\GeminiER2Harness\er2sim\control.py</code><br>
+            桌体保守包络：第 848 至 854 行；接近位生成与筛选：第 1195 至 1279 行。<br>
+            本场景计算出的外扩区域约为 <code>(-0.25, 1.45, -0.48, 0.57)</code>。
+          </div>
+        </div>
+
+        <div class="impact-grid">
+          <div class="impact">
+            <b>任务结果</b>
+            <span>最终成功，说明递归修复和返回机制可用。</span>
+          </div>
+          <div class="impact">
+            <b>执行效率</b>
+            <span>增加一次黄箱搬运，并引发后续路线重新计算。</span>
+          </div>
+          <div class="impact">
+            <b class="risk">物理风险</b>
+            <span>多一次抓取、搬运和放置，就多一次碰撞或放置失败机会。</span>
+          </div>
+          <div class="impact">
+            <b class="risk">可扩展性风险</b>
+            <span>场景更拥挤时，同类漏检会频繁触发不必要的环境改造。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">08 / 整改方案</div>
+          <div>
+            <h2>整改方案与验收标准</h2>
+            <p class="section-summary">
+              修复重点不是简单增加一个“右侧特例”，而是建立候选覆盖、拒绝证据和方案比较三项通用能力。
+            </p>
+          </div>
+        </div>
+
+        <div class="remediation-table">
+          <div class="head">优先级</div>
+          <div class="head">整改项</div>
+          <div class="head">实现要求</div>
+          <div class="head">验收证据</div>
+
+          <div class="priority p0">P0</div>
+          <div><b>候选覆盖契约</b></div>
+          <div>按桌前、左侧、右侧、桌后或自由空间扇区生成接近位；每个方向必须记录候选或明确拒绝原因。</div>
+          <div>日志可回答“哪些方向生成了多少候选、在哪一层被过滤、依据是什么”。</div>
+
+          <div class="priority p0">P0</div>
+          <div><b>修复触发门槛</b></div>
+          <div>触发搬障碍物前，必须证明所有有效方向均无可行底盘路线或机械臂抓取方案。</div>
+          <div>“候选为空”与“全空间不可达”使用不同诊断码，不允许直接互换。</div>
+
+          <div class="priority p0">P0</div>
+          <div><b>当前场景回归测试</b></div>
+          <div>固定黄箱、桌子、挡板、红球和机器人初始状态，验证右侧绕行被选中。</div>
+          <div>任务树中不得出现“搬黄箱”修复子树；底盘和抓取检查全部通过。</div>
+
+          <div class="priority p1">P1</div>
+          <div><b>分离几何安全裕量</b></div>
+          <div>底盘避碰、机械臂可达和桌体保护分别建模，避免用同一个 0.25 m 包络承担全部约束。</div>
+          <div>改变任一裕量时，可独立观察候选数量、碰撞结果和抓取可达性。</div>
+
+          <div class="priority p1">P1</div>
+          <div><b>方案代价比较</b></div>
+          <div>同时计算绕行距离、动作数量、环境改动、失败风险和计划失效范围。</div>
+          <div>存在安全绕行时，环境改造方案必须有明确的更优证据才能胜出。</div>
+
+          <div class="priority p1">P1</div>
+          <div><b>规划可观测性</b></div>
+          <div>输出生成前、几何过滤后、路线检查后、抓取检查后的候选计数和拒绝原因。</div>
+          <div>单次复盘可定位到候选生成、碰撞检查、路径搜索或机械臂检查中的具体阶段。</div>
+        </div>
+
+        <div class="subhead">发布验收条件</div>
+        <div class="acceptance">
+          <div class="acceptance-item">
+            <b>场景回归</b>
+            <span>黄箱保持原位，系统自动选择右侧绕行并完成红球抓取。</span>
+          </div>
+          <div class="acceptance-item">
+            <b>安全不降级</b>
+            <span>黄箱继续参与障碍检测，桌后停靠位与机械臂路径均无碰撞。</span>
+          </div>
+          <div class="acceptance-item">
+            <b>诊断可解释</b>
+            <span>每个方向的候选、过滤阶段和拒绝依据均可从运行记录还原。</span>
+          </div>
+          <div class="acceptance-item">
+            <b>修复触发正确</b>
+            <span>只有所有绕行方案均失败时，才允许生成搬障碍物子任务。</span>
+          </div>
+          <div class="acceptance-item">
+            <b>快照依赖正确</b>
+            <span>物体位置变化后旧规划失效，并基于新世界版本重新生成。</span>
+          </div>
+          <div class="acceptance-item">
+            <b>反例覆盖</b>
+            <span>人为封闭桌侧路线时，系统能够给出全方向不可达证据并合理搬箱。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dark-band">
+      <div class="inner decision-close">
+        <div class="close-verdict">
+          <h2>最终判断</h2>
+          <p>
+            本次不是“规划时没有考虑黄箱”，而是“考虑了黄箱，但没有完整考虑接近红球的方向”。
+            系统具备递归修复能力，但修复触发条件需要增加规划完备性约束。
+          </p>
+        </div>
+        <div class="status-table">
+          <div class="status-row">
+            <b>已完成</b>
+            <span>路线复核、问题定位、汇报材料纠正</span>
+          </div>
+          <div class="status-row">
+            <b>尚未完成</b>
+            <span>规划器源码修复与自动化回归测试</span>
+          </div>
+          <div class="status-row">
+            <b>建议下一步</b>
+            <span>按 P0 三项整改后，再评估是否需要调整代价模型</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="inner footer-line">
+        <span>依据：本机绿球任务完整运行记录、同一初始场景桌侧路线补测、规划器源码定位</span>
+        <span>技术负责人汇报版 / 2026-09-01</span>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

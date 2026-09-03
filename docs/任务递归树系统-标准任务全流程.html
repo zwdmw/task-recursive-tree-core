@@ -1,0 +1,2306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1800, initial-scale=1">
+  <title>任务递归树系统：标准任务执行架构</title>
+  <style>
+    :root {
+      --ink: #172126;
+      --muted: #58666c;
+      --paper: #ffffff;
+      --wash: #f3f5f5;
+      --line: #cbd3d6;
+      --line-dark: #8c989e;
+      --deep: #17272e;
+      --deep-2: #24363e;
+      --teal: #087d80;
+      --teal-dark: #075f62;
+      --teal-soft: #e6f2f1;
+      --green: #34784f;
+      --green-soft: #e8f2eb;
+      --blue: #356b91;
+      --blue-soft: #e9f0f5;
+      --amber: #a56d18;
+      --amber-soft: #faf1e2;
+      --red: #ae4d44;
+      --red-soft: #f8ecea;
+      --gray: #748187;
+      --gray-soft: #edf0f1;
+      --table: #bca986;
+      --box: #daa632;
+      --ball-red: #cc5147;
+      --ball-green: #3e9858;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1800px;
+      min-width: 1800px;
+      margin: 0;
+      color: var(--ink);
+      background: #dfe4e6;
+      font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif;
+      font-size: 20px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    main {
+      width: 1800px;
+      background: var(--paper);
+    }
+
+    .inner {
+      width: 1560px;
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 520px;
+      padding: 58px 0 52px;
+      color: #fff;
+      background: var(--deep);
+      border-bottom: 10px solid var(--teal);
+    }
+
+    .report-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 18px;
+      color: #bdcbd0;
+      border-bottom: 1px solid #53666f;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .report-meta strong {
+      color: #fff;
+    }
+
+    .kicker {
+      margin-top: 38px;
+      color: #78cfca;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 9px 0 0;
+      font-size: 72px;
+      line-height: 1.12;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      max-width: 1460px;
+      margin-top: 9px;
+      color: #d8e3e7;
+      font-size: 32px;
+      line-height: 1.38;
+      font-weight: 700;
+    }
+
+    .one-sentence {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      margin-top: 32px;
+      border: 1px solid #52656e;
+      background: var(--deep-2);
+    }
+
+    .one-sentence b {
+      padding: 24px 26px;
+      color: #8ed7d3;
+      border-right: 1px solid #52656e;
+      font-size: 24px;
+    }
+
+    .one-sentence span {
+      padding: 24px 29px;
+      color: #f5f9fa;
+      font-size: 27px;
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .hero-flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-top: 28px;
+      border-top: 1px solid #53666f;
+      border-bottom: 1px solid #53666f;
+    }
+
+    .hero-step {
+      min-height: 104px;
+      padding: 14px 18px;
+      border-right: 1px solid #53666f;
+    }
+
+    .hero-step:last-child {
+      border-right: 0;
+    }
+
+    .hero-step i,
+    .hero-step b,
+    .hero-step span {
+      display: block;
+      font-style: normal;
+    }
+
+    .hero-step i {
+      color: #73cbc7;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .hero-step b {
+      margin-top: 2px;
+      color: #fff;
+      font-size: 21px;
+    }
+
+    .hero-step span {
+      margin-top: 3px;
+      color: #b9c8ce;
+      font-size: 15px;
+    }
+
+    section {
+      padding: 58px 0 64px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section.alt {
+      background: var(--wash);
+    }
+
+    section.dark {
+      color: #fff;
+      background: #22343c;
+      border-bottom: 0;
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 215px 1fr;
+      gap: 34px;
+      align-items: start;
+      margin-bottom: 31px;
+    }
+
+    .section-no {
+      padding-top: 8px;
+      color: var(--teal);
+      border-top: 4px solid var(--teal);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 44px;
+      line-height: 1.24;
+      font-weight: 900;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .section-summary {
+      max-width: 1270px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 21px;
+    }
+
+    .subhead {
+      margin: 29px 0 14px;
+      padding-left: 15px;
+      border-left: 5px solid var(--teal);
+      font-size: 27px;
+      font-weight: 900;
+    }
+
+    .system-position {
+      margin-bottom: 26px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .position-title {
+      padding: 13px 22px;
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .position-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .position-card {
+      min-height: 180px;
+      padding: 22px 24px;
+    }
+
+    .position-card:first-child {
+      border-right: 1px solid var(--line);
+    }
+
+    .position-card.fixed {
+      background: var(--gray-soft);
+    }
+
+    .position-card.runtime {
+      background: var(--teal-soft);
+    }
+
+    .position-card i,
+    .position-card h3,
+    .position-card p {
+      display: block;
+      font-style: normal;
+    }
+
+    .position-card i {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .position-card.runtime i,
+    .position-card.runtime h3 {
+      color: var(--teal-dark);
+    }
+
+    .position-card h3 {
+      margin-top: 4px;
+      font-size: 27px;
+    }
+
+    .position-card p {
+      margin-top: 9px;
+      color: #3c4a50;
+      font-size: 18px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .position-rule {
+      padding: 14px 22px;
+      color: #315f43;
+      background: var(--green-soft);
+      border-top: 1px solid #bfd3c5;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .five-things {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .thing {
+      min-height: 190px;
+      padding: 23px 21px;
+      border-right: 1px solid var(--line);
+    }
+
+    .thing:last-child {
+      border-right: 0;
+    }
+
+    .thing .number,
+    .thing h3,
+    .thing .plain,
+    .thing .formal,
+    .thing .example {
+      display: block;
+    }
+
+    .thing .number {
+      color: var(--teal);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .thing h3 {
+      margin-top: 4px;
+      font-size: 29px;
+    }
+
+    .thing .plain {
+      margin-top: 8px;
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .thing .formal {
+      margin-top: 13px;
+      padding: 8px 10px;
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      border-left: 4px solid var(--teal);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .thing .example {
+      margin-top: 14px;
+      padding-top: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .simple-architecture {
+      margin-top: 25px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .architecture-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+      padding: 14px 23px;
+      color: #fff;
+      background: var(--deep-2);
+    }
+
+    .architecture-head span {
+      color: #c4d1d6;
+      font-size: 16px;
+    }
+
+    .command-line,
+    .evidence-line {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .command-line {
+      padding: 24px 22px 17px;
+    }
+
+    .command-node {
+      position: relative;
+      min-height: 114px;
+      padding: 16px 15px;
+      background: var(--teal-soft);
+      border: 1px solid #a4c3c1;
+      text-align: center;
+    }
+
+    .command-node:not(:last-child) {
+      margin-right: 34px;
+    }
+
+    .command-node:not(:last-child)::after {
+      position: absolute;
+      top: 37px;
+      right: -32px;
+      color: var(--teal);
+      content: "→";
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .command-node b,
+    .command-node span {
+      display: block;
+    }
+
+    .command-node b {
+      color: var(--teal-dark);
+      font-size: 21px;
+    }
+
+    .command-node span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .evidence-title {
+      padding: 11px 22px;
+      color: #fff;
+      background: var(--green);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .evidence-line {
+      background: var(--green-soft);
+      border-top: 1px solid #bed1c4;
+    }
+
+    .evidence-node {
+      position: relative;
+      min-height: 75px;
+      padding: 14px 15px;
+      color: #345441;
+      border-right: 1px solid #c5d6ca;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .evidence-node:last-child {
+      border-right: 0;
+    }
+
+    .evidence-node:not(:first-child)::before {
+      position: absolute;
+      left: -6px;
+      content: "←";
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .continuity {
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .continuity-title {
+      padding: 12px 21px;
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      border-bottom: 1px solid #b6cfcd;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .continuity-row {
+      display: grid;
+      grid-template-columns: 1fr 76px 1.28fr 76px 1fr;
+      align-items: stretch;
+      padding: 18px 20px;
+    }
+
+    .continuity-card {
+      min-height: 118px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: var(--gray-soft);
+      text-align: center;
+    }
+
+    .continuity-card.world {
+      color: #315f43;
+      background: var(--green-soft);
+      border-color: #abc9b4;
+    }
+
+    .continuity-card b,
+    .continuity-card span {
+      display: block;
+    }
+
+    .continuity-card b {
+      font-size: 20px;
+    }
+
+    .continuity-card span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .continuity-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--teal);
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .six-questions {
+      display: grid;
+      grid-template-columns: 105px 255px 1fr 1fr;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .six-questions > div {
+      min-height: 72px;
+      padding: 14px 17px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .six-questions > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .six-questions > div:nth-last-child(-n + 4) {
+      border-bottom: 0;
+    }
+
+    .six-questions .head {
+      min-height: 54px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .six-questions .qno {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .six-questions .question {
+      color: var(--teal-dark);
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .six-questions .rule {
+      color: var(--muted);
+    }
+
+    .six-questions .example {
+      color: #28383f;
+      font-weight: 750;
+    }
+
+    .bad-good {
+      display: grid;
+      grid-template-columns: 1fr 100px 1fr;
+      align-items: stretch;
+      margin-top: 24px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .bad,
+    .good {
+      padding: 21px 23px;
+    }
+
+    .bad h3 {
+      color: var(--red);
+    }
+
+    .good h3 {
+      color: var(--green);
+    }
+
+    .bad p,
+    .good p {
+      margin-top: 9px;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .bad span,
+    .good span {
+      display: block;
+      margin-top: 11px;
+      padding-top: 10px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .change-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: var(--teal);
+      font-size: 38px;
+      font-weight: 900;
+    }
+
+    .input-note {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      margin-top: 20px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .input-note b {
+      padding: 17px 20px;
+      color: #fff;
+      background: var(--gray);
+      font-size: 20px;
+    }
+
+    .input-note span {
+      padding: 17px 22px;
+      color: #435158;
+      background: var(--gray-soft);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .snapshot-plain {
+      display: grid;
+      grid-template-columns: 355px 1fr;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .snapshot-definition {
+      padding: 26px 25px;
+      color: #fff;
+      background: var(--deep-2);
+    }
+
+    .snapshot-definition b,
+    .snapshot-definition span,
+    .snapshot-definition em {
+      display: block;
+      font-style: normal;
+    }
+
+    .snapshot-definition b {
+      color: #82d2ce;
+      font-size: 30px;
+    }
+
+    .snapshot-definition span {
+      margin-top: 10px;
+      font-size: 22px;
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .snapshot-definition em {
+      margin-top: 18px;
+      padding-top: 14px;
+      color: #c7d4d9;
+      border-top: 1px solid #53666f;
+      font-size: 16px;
+    }
+
+    .snapshot-steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .snapshot-step {
+      position: relative;
+      min-height: 185px;
+      padding: 21px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .snapshot-step:last-child {
+      border-right: 0;
+    }
+
+    .snapshot-step:not(:last-child)::after {
+      position: absolute;
+      top: 48px;
+      right: -12px;
+      z-index: 2;
+      width: 24px;
+      height: 24px;
+      color: var(--teal);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      content: "→";
+      text-align: center;
+      font-size: 15px;
+      line-height: 22px;
+      font-weight: 900;
+    }
+
+    .snapshot-step i,
+    .snapshot-step b,
+    .snapshot-step span,
+    .snapshot-step em {
+      display: block;
+      font-style: normal;
+    }
+
+    .snapshot-step i {
+      color: var(--teal);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .snapshot-step b {
+      margin-top: 0;
+      font-size: 21px;
+    }
+
+    .snapshot-step span {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .snapshot-step em {
+      margin-top: 13px;
+      padding-top: 9px;
+      color: var(--green);
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .snapshot-format {
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .snapshot-format-title {
+      padding: 12px 20px;
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .snapshot-format-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .snapshot-field {
+      min-height: 142px;
+      padding: 15px 14px;
+      border-right: 1px solid var(--line);
+    }
+
+    .snapshot-field:last-child {
+      border-right: 0;
+    }
+
+    .snapshot-field b,
+    .snapshot-field span {
+      display: block;
+    }
+
+    .snapshot-field b {
+      color: var(--teal-dark);
+      font-size: 17px;
+    }
+
+    .snapshot-field span {
+      margin-top: 7px;
+      color: #3e4d53;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .snapshot-format-note {
+      padding: 11px 19px;
+      color: #84413a;
+      background: var(--red-soft);
+      border-top: 1px solid #dfbbb7;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .world-table {
+      display: grid;
+      grid-template-columns: 160px 260px 1fr 1fr;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .world-table > div {
+      min-height: 64px;
+      padding: 12px 15px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .world-table > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .world-table > div:nth-last-child(-n + 4) {
+      border-bottom: 0;
+    }
+
+    .world-table .head {
+      min-height: 52px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .world-table .entity {
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .world-table .meaning {
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .fact-boundary {
+      display: grid;
+      grid-template-columns: 230px 1fr 1fr;
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .fact-boundary b {
+      padding: 18px 20px;
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 20px;
+    }
+
+    .fact-boundary span {
+      padding: 18px 21px;
+      border-right: 1px solid var(--line);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .fact-boundary span:last-child {
+      border-right: 0;
+    }
+
+    .fact-boundary .keep {
+      color: #315f43;
+      background: var(--green-soft);
+    }
+
+    .fact-boundary .reject {
+      color: #84413a;
+      background: var(--red-soft);
+    }
+
+    .runtime-roles {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .role {
+      min-height: 170px;
+      padding: 20px 19px;
+      border-right: 1px solid var(--line);
+    }
+
+    .role:last-child {
+      border-right: 0;
+    }
+
+    .role i,
+    .role b,
+    .role strong,
+    .role span {
+      display: block;
+      font-style: normal;
+    }
+
+    .role i {
+      color: var(--teal);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .role b {
+      margin-top: 4px;
+      font-size: 25px;
+    }
+
+    .role strong {
+      margin-top: 8px;
+      color: var(--teal-dark);
+      font-size: 16px;
+    }
+
+    .role span {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .control-rules {
+      display: grid;
+      grid-template-columns: 235px 1fr;
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .control-rules > div {
+      min-height: 66px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .control-rules > div:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .control-rules .rule-label {
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .control-rules .rule-text {
+      color: #3b4a50;
+      font-size: 17px;
+      font-weight: 750;
+    }
+
+    .nine-flow {
+      display: grid;
+      grid-template-columns: 78px 260px 1fr 420px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .nine-flow > div {
+      min-height: 74px;
+      padding: 13px 16px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .nine-flow > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .nine-flow > div:nth-last-child(-n + 4) {
+      border-bottom: 0;
+    }
+
+    .nine-flow .head {
+      min-height: 52px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .nine-flow .step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    .nine-flow .name {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .nine-flow .plain {
+      color: #35444a;
+      font-weight: 700;
+    }
+
+    .nine-flow .professional {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .nine-flow .decision {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .nine-flow .physical {
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .nine-flow .evidence {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .result-meanings {
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .result-title {
+      padding: 11px 19px;
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .result-card {
+      min-height: 126px;
+      padding: 16px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .result-card:last-child {
+      border-right: 0;
+    }
+
+    .result-card b,
+    .result-card span {
+      display: block;
+    }
+
+    .result-card b {
+      font-size: 20px;
+    }
+
+    .result-card span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .result-card.action {
+      background: var(--blue-soft);
+    }
+
+    .result-card.task {
+      background: var(--green-soft);
+    }
+
+    .result-card.unknown {
+      background: var(--amber-soft);
+    }
+
+    .loop-summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .loop-box {
+      min-height: 126px;
+      padding: 17px 19px;
+      border-right: 1px solid var(--line);
+    }
+
+    .loop-box:last-child {
+      border-right: 0;
+    }
+
+    .loop-box b,
+    .loop-box span {
+      display: block;
+    }
+
+    .loop-box b {
+      font-size: 20px;
+    }
+
+    .loop-box span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .loop-box.ok {
+      background: var(--green-soft);
+    }
+
+    .loop-box.retry {
+      background: var(--amber-soft);
+    }
+
+    .loop-box.unknown {
+      background: var(--blue-soft);
+    }
+
+    .loop-box.repair {
+      background: var(--red-soft);
+    }
+
+    .loop-box.stop {
+      background: var(--gray-soft);
+    }
+
+    .repair-tree {
+      padding: 26px 24px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .main-task {
+      width: 620px;
+      margin: 0 auto;
+      padding: 18px 21px;
+      color: #fff;
+      background: var(--deep-2);
+      border-top: 5px solid #79cfca;
+      text-align: center;
+    }
+
+    .main-task b,
+    .main-task span {
+      display: block;
+    }
+
+    .main-task b {
+      font-size: 25px;
+    }
+
+    .main-task span {
+      margin-top: 4px;
+      color: #c8d4d9;
+      font-size: 16px;
+    }
+
+    .tree-down {
+      width: 2px;
+      height: 28px;
+      margin: 0 auto;
+      background: var(--line-dark);
+    }
+
+    .condition-fail {
+      width: 560px;
+      margin: 0 auto;
+      padding: 14px 18px;
+      color: var(--red);
+      background: var(--red-soft);
+      border: 1px solid #d6a29e;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .repair-row {
+      display: grid;
+      grid-template-columns: 1fr 150px 1fr 150px 1fr;
+      align-items: stretch;
+      margin-top: 27px;
+    }
+
+    .repair-node {
+      min-height: 174px;
+      padding: 18px 19px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .repair-node b,
+    .repair-node span,
+    .repair-node em {
+      display: block;
+      font-style: normal;
+    }
+
+    .repair-node b {
+      font-size: 22px;
+    }
+
+    .repair-node span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .repair-node em {
+      margin-top: 12px;
+      padding-top: 9px;
+      color: var(--teal-dark);
+      border-top: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .repair-node.active {
+      background: var(--red-soft);
+      border-color: #d6a29e;
+    }
+
+    .repair-node.active b {
+      color: var(--red);
+    }
+
+    .repair-node.return {
+      background: var(--green-soft);
+      border-color: #abc9b4;
+    }
+
+    .repair-node.return b {
+      color: var(--green);
+    }
+
+    .repair-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--teal);
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .repair-rules {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 24px;
+      border: 1px solid var(--line-dark);
+    }
+
+    .repair-rule {
+      min-height: 130px;
+      padding: 17px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .repair-rule:last-child {
+      border-right: 0;
+    }
+
+    .repair-rule b,
+    .repair-rule span {
+      display: block;
+    }
+
+    .repair-rule b {
+      color: var(--red);
+      font-size: 20px;
+    }
+
+    .repair-rule span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .route-note {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      margin-top: 20px;
+      border: 1px solid #d7b77f;
+    }
+
+    .route-note b {
+      padding: 17px 20px;
+      color: #fff;
+      background: var(--amber);
+      font-size: 19px;
+    }
+
+    .route-note span {
+      padding: 17px 21px;
+      color: #6c521f;
+      background: var(--amber-soft);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .case-layout {
+      display: grid;
+      grid-template-columns: 630px 1fr;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .scene {
+      padding: 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .scene svg {
+      display: block;
+      width: 100%;
+      height: 510px;
+    }
+
+    .case-task {
+      padding: 22px 24px;
+    }
+
+    .case-task h3 {
+      font-size: 29px;
+    }
+
+    .case-question {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .case-question b,
+    .case-question span {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .case-question b {
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+    }
+
+    .case-question span {
+      color: #344349;
+      font-weight: 750;
+    }
+
+    .case-timeline {
+      display: grid;
+      grid-template-columns: 180px 300px 1fr 380px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .case-timeline > div {
+      min-height: 72px;
+      padding: 13px 15px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .case-timeline > div:nth-child(4n) {
+      border-right: 0;
+    }
+
+    .case-timeline > div:nth-last-child(-n + 4) {
+      border-bottom: 0;
+    }
+
+    .case-timeline .head {
+      min-height: 52px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .case-timeline .when {
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .case-timeline .tree {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .case-timeline .world {
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .simple-artifacts {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .simple-artifact {
+      position: relative;
+      min-height: 126px;
+      padding: 15px 13px;
+      border-right: 1px solid var(--line);
+    }
+
+    .simple-artifact:last-child {
+      border-right: 0;
+    }
+
+    .simple-artifact:not(:last-child)::after {
+      position: absolute;
+      top: 42px;
+      right: -9px;
+      z-index: 2;
+      color: var(--teal);
+      content: "→";
+      font-weight: 900;
+    }
+
+    .simple-artifact i,
+    .simple-artifact b,
+    .simple-artifact span {
+      display: block;
+      font-style: normal;
+    }
+
+    .simple-artifact i {
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .simple-artifact b {
+      margin-top: 3px;
+      font-size: 19px;
+    }
+
+    .simple-artifact span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .boss-check {
+      display: grid;
+      grid-template-columns: 250px 1fr 1fr;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .boss-check > div {
+      min-height: 76px;
+      padding: 14px 17px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+    }
+
+    .boss-check > div:nth-child(3n) {
+      border-right: 0;
+    }
+
+    .boss-check > div:nth-last-child(-n + 3) {
+      border-bottom: 0;
+    }
+
+    .boss-check .head {
+      min-height: 52px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .boss-check .question {
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .boss-check .answer {
+      color: #35444a;
+      font-weight: 750;
+    }
+
+    .boss-check .why {
+      color: var(--muted);
+    }
+
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .value-item {
+      min-height: 135px;
+      padding: 17px 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .value-item:last-child {
+      border-right: 0;
+    }
+
+    .value-item b,
+    .value-item span {
+      display: block;
+    }
+
+    .value-item b {
+      color: var(--teal-dark);
+      font-size: 20px;
+    }
+
+    .value-item span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .implementation-boundary {
+      margin-top: 22px;
+      border: 1px solid var(--line-dark);
+      background: #fff;
+    }
+
+    .boundary-title {
+      padding: 12px 20px;
+      color: #fff;
+      background: var(--deep-2);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .boundary-box {
+      min-height: 142px;
+      padding: 18px 20px;
+    }
+
+    .boundary-box:first-child {
+      color: #315f43;
+      background: var(--green-soft);
+      border-right: 1px solid var(--line);
+    }
+
+    .boundary-box:last-child {
+      color: #6c521f;
+      background: var(--amber-soft);
+    }
+
+    .boundary-box b,
+    .boundary-box span {
+      display: block;
+    }
+
+    .boundary-box b {
+      font-size: 21px;
+    }
+
+    .boundary-box span {
+      margin-top: 7px;
+      color: #435158;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .close {
+      display: grid;
+      grid-template-columns: 1fr 610px;
+      gap: 56px;
+      align-items: start;
+    }
+
+    .close h2 {
+      font-size: 46px;
+    }
+
+    .close p {
+      margin-top: 15px;
+      color: #e4ecef;
+      font-size: 25px;
+      line-height: 1.65;
+      font-weight: 750;
+    }
+
+    .close-list {
+      border-top: 1px solid #5d6f77;
+    }
+
+    .close-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      padding: 16px 0;
+      border-bottom: 1px solid #5d6f77;
+    }
+
+    .close-row b {
+      color: #7fd2ce;
+    }
+
+    .close-row span {
+      color: #ced9dd;
+      font-size: 17px;
+    }
+
+    footer {
+      padding: 24px 0;
+      color: #728087;
+      background: #edf0f1;
+      border-top: 1px solid var(--line);
+      font-size: 15px;
+    }
+
+    .footer-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="inner">
+        <div class="report-meta">
+          <span><strong>系统架构</strong> / 标准任务执行</span>
+          <span>实例：把绿球放入空盘子　|　2026-09-01</span>
+        </div>
+
+        <div class="kicker">运行机制与状态边界</div>
+        <h1>任务递归树系统：标准任务执行架构</h1>
+        <p class="subtitle">任务契约、世界快照、运行时工作树、受控执行与独立验收</p>
+
+        <div class="one-sentence">
+          <b>执行原则</b>
+          <span>
+            系统为每项任务创建独立工作树，由任务树内核依据最新世界快照推进节点；
+            前置条件不满足或规划失败时挂接修复子树，物理动作后重新观测，并由条件验证器依据现场证据提交状态。
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">01 / 核心对象</div>
+          <div>
+            <h2>五个对象分别保存任务、世界与执行状态</h2>
+            <p class="section-summary">
+              五个对象分开存储，各自有明确写入者。任务目标、现场事实、运行进度和动作结果不能混为一份状态。
+            </p>
+          </div>
+        </div>
+
+        <div class="five-things">
+          <div class="thing">
+            <h3>任务单</h3>
+            <span class="plain">标准任务契约</span>
+            <span class="example">定义任务类型、对象、目标区域、前置条件、完成条件和异常策略。</span>
+          </div>
+
+          <div class="thing">
+            <h3>世界快照</h3>
+            <span class="plain">不可变现场事实</span>
+            <span class="example">冻结统一时间窗内的对象、位置、关系、机器人状态和证据版本。</span>
+          </div>
+
+          <div class="thing">
+            <h3>运行时工作树</h3>
+            <span class="plain">节点与执行状态</span>
+            <span class="example">保存当前节点、父子关系、修复子树、返回位置和最终状态。</span>
+          </div>
+
+          <div class="thing">
+            <h3>版本化动作方案</h3>
+            <span class="plain">路线与操作参数</span>
+            <span class="example">记录所依赖的世界版本、接近方向、路线、抓取姿态和放置姿态。</span>
+          </div>
+
+          <div class="thing">
+            <h3>验收证据</h3>
+            <span class="plain">观察与条件判断</span>
+            <span class="example">记录动作后的新世界快照，以及节点成功、失败或结果未知的依据。</span>
+          </div>
+        </div>
+
+        <div class="simple-architecture">
+          <div class="architecture-head">
+            <h3>总体运行关系</h3>
+            <span>上行为执行链，下行为证据反馈</span>
+          </div>
+
+          <div class="command-line">
+            <div class="command-node"><b>任务单</b><span>目标、条件与异常策略</span></div>
+            <div class="command-node"><b>运行时工作树</b><span>当前节点与控制流</span></div>
+            <div class="command-node"><b>版本化动作方案</b><span>路线、姿态与版本依赖</span></div>
+            <div class="command-node"><b>物理运行时</b><span>版本、资源与安全检查</span></div>
+            <div class="command-node"><b>现实世界</b><span>物体位置与机器人状态发生变化</span></div>
+          </div>
+
+          <div class="evidence-title">动作后重新观测，证据沿反馈链返回</div>
+          <div class="evidence-line">
+            <div class="evidence-node">提交节点状态或挂接修复子树</div>
+            <div class="evidence-node">任务树内核更新工作树</div>
+            <div class="evidence-node">检查方案版本是否仍有效</div>
+            <div class="evidence-node">区分动作结果与任务状态</div>
+            <div class="evidence-node">生成新的世界快照</div>
+          </div>
+        </div>
+
+        <div class="continuity">
+          <div class="continuity-title">任务树隔离，现实世界连续</div>
+          <div class="continuity-row">
+            <div class="continuity-card">
+              <b>任务一：独立工作树</b>
+              <span>保存本任务的根目标、节点状态、执行位置和事件记录。</span>
+            </div>
+            <div class="continuity-arrow">→</div>
+            <div class="continuity-card world">
+              <b>持续复用的真实现场</b>
+              <span>世界快照、机器人状态和动作事务记录不会因新任务自动重置。</span>
+            </div>
+            <div class="continuity-arrow">→</div>
+            <div class="continuity-card">
+              <b>任务二：新建工作树</b>
+              <span>读取任务一执行后的现场，但不复用任务一的节点和执行状态。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">02 / 任务单</div>
+          <div>
+            <h2>标准任务契约包含六项内容</h2>
+            <p class="section-summary">
+              任务契约描述目标、约束和完成标准，不包含具体路线、抓取姿态或机器人动作序列。
+            </p>
+          </div>
+        </div>
+
+        <div class="six-questions">
+          <div class="head">序号</div>
+          <div class="head">任务要素</div>
+          <div class="head">规范要求</div>
+          <div class="head">绿球任务实例</div>
+
+          <div class="qno">1</div>
+          <div class="question">任务类型</div>
+          <div class="rule">选择系统已经认识的任务类型，例如放置、移动、检查。</div>
+          <div class="example">做一个“放置”任务。</div>
+
+          <div class="qno">2</div>
+          <div class="question">目标对象</div>
+          <div class="rule">写清类别、属性、数量；多个候选时还要有稳定选择规则。</div>
+          <div class="example">一个绿色、球状、可以搬动的物体。</div>
+
+          <div class="qno">3</div>
+          <div class="question">目标位置</div>
+          <div class="rule">不仅要说目标物体，还要说具体区域，例如盘内、桌面或停车区。</div>
+          <div class="example">一个盘子的内部可放置区域。</div>
+
+          <div class="qno">4</div>
+          <div class="question">开始条件</div>
+          <div class="rule">条件必须能从现场账本直接检查，不能写“情况合适”这种话。</div>
+          <div class="example">盘子里面必须为空。</div>
+
+          <div class="qno">5</div>
+          <div class="question">完成条件</div>
+          <div class="rule">完成条件必须由动作后的世界快照直接验证，不能以动作模块的成功返回作为完成证据。</div>
+          <div class="example">绿球在盘内，而且夹爪不再拿着绿球。</div>
+
+          <div class="qno">6</div>
+          <div class="question">异常处理</div>
+          <div class="rule">写清能否重试、能否插入修复任务、最多允许多少次。</div>
+          <div class="example">无安全路线时完整检查绕行；确认黄箱是关键障碍后搬到停放区；修复次数有限。</div>
+        </div>
+
+        <div class="input-note">
+          <b>输入层边界</b>
+          <span>
+            文本、界面和业务接口仅负责生成结构化任务单；任务单通过校验后，运行时不再直接解释或执行原始输入。
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">03 / 世界快照</div>
+          <div>
+            <h2>世界快照：构建规则与初始实例</h2>
+            <p class="section-summary">
+              摄像头、机器人状态和地图数据经时间对齐、实体归一、坐标规范化、关系裁决和版本冻结后，生成不可变世界快照。
+            </p>
+          </div>
+        </div>
+
+        <div class="snapshot-plain">
+          <div class="snapshot-definition">
+            <b>世界快照</b>
+            <span>按统一时间窗记录可追溯事实，生成后不可覆盖修改，只能追加新版本。</span>
+            <em>事实层只接收可追溯的观测结果；任务目标、计划输出和未确认推断不得写入世界快照。</em>
+          </div>
+
+          <div class="snapshot-steps">
+            <div class="snapshot-step">
+              <b>时间对齐</b>
+              <span>按统一时间窗对齐传感器数据、机器人状态和地图版本，禁止跨时间窗混用。</span>
+            </div>
+            <div class="snapshot-step">
+              <b>实体归一</b>
+              <span>跨观测周期识别同一对象，并保持稳定编号。</span>
+            </div>
+            <div class="snapshot-step">
+              <b>坐标规范化</b>
+              <span>将位置、方向、尺寸和单位转换为统一表达。</span>
+            </div>
+            <div class="snapshot-step">
+              <b>关系裁决</b>
+              <span>生成空间、持有和占用关系；冲突记录按证据来源与时间处理。</span>
+            </div>
+            <div class="snapshot-step">
+              <b>版本冻结</b>
+              <span>冻结世界、实体和机器人状态版本；后续变化生成新版本，不覆盖旧记录。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="snapshot-format">
+          <div class="snapshot-format-title">规范化后的快照统一包含六类事实：以下为绿球在第 1 版现场中的实例</div>
+          <div class="snapshot-format-grid">
+            <div class="snapshot-field">
+              <b>对象身份</b>
+              <span>绿球。多次观察仍指向同一个稳定对象。</span>
+            </div>
+            <div class="snapshot-field">
+              <b>类别与属性</b>
+              <span>绿色、球状、可移动，符合任务对象规则。</span>
+            </div>
+            <div class="snapshot-field">
+              <b>位置与姿态</b>
+              <span>位于地面左侧；位置、方向和尺寸已统一表达。</span>
+            </div>
+            <div class="snapshot-field">
+              <b>空间与持有关系</b>
+              <span>不在盘内，也没有被机器人夹爪持有。</span>
+            </div>
+            <div class="snapshot-field">
+              <b>能力与安全状态</b>
+              <span>当前可以抓取，没有观察到禁止操作条件。</span>
+            </div>
+            <div class="snapshot-field">
+              <b>证据与版本</b>
+              <span>来自同一时间窗口的观察，随第 1 版现场一起冻结。</span>
+            </div>
+          </div>
+          <div class="snapshot-format-note">无法确认的内容明确记为“未知”；任务目标、规划结果和推测不能用于补写现场事实。</div>
+        </div>
+
+        <div class="subhead">绿球任务的初始世界快照</div>
+        <div class="world-table">
+          <div class="head">对象</div>
+          <div class="head">世界快照事实</div>
+          <div class="head">可直接验证的条件</div>
+          <div class="head">不属于事实层的决策</div>
+
+          <div class="entity">绿球</div>
+          <div>在地面；可以搬动；没有被夹爪拿着。</div>
+          <div class="meaning">它符合目标对象规则，但还没有进入盘子。</div>
+          <div>不能决定从哪条路线去抓它。</div>
+
+          <div class="entity">盘子</div>
+          <div>在桌面；内部区域边界已知；当前内部为空。</div>
+          <div class="meaning">它符合目标位置规则，任务的开始条件已经成立。</div>
+          <div>不能决定机器人从哪个方向接近桌面。</div>
+
+          <div class="entity">黄箱</div>
+          <div>在桌前中间；参与碰撞；可以搬动；左右固定挡板边界已知。</div>
+          <div class="meaning">它是路线障碍候选，规划器必须检查所有接近方向。</div>
+          <div>不能仅凭它的位置，就直接写成“必须搬走”。</div>
+
+          <div class="entity">机器人</div>
+          <div>处于初始位置；夹爪为空；安全状态正常。</div>
+          <div class="meaning">可以进入规划和动作检查。</div>
+          <div>不能证明任意路线都能走通。</div>
+        </div>
+
+        <div class="fact-boundary">
+          <b>事实与决策分开</b>
+          <span class="keep">事实：黄箱、固定挡板和停放区的位置，黄箱大小及能否移动。</span>
+          <span class="reject">结论：“黄箱必须搬走”需要完整路线检查和移除障碍后的路线恢复证据。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">04 / 职责边界</div>
+          <div>
+            <h2>职责边界与标准执行循环</h2>
+            <p class="section-summary">
+              任务推进、世界状态、方案计算、物理执行和条件验证由不同组件负责，物理写入与任务状态写入各有唯一入口。
+            </p>
+          </div>
+        </div>
+
+        <div class="runtime-roles">
+          <div class="role">
+            <b>任务树内核</b>
+            <span>解释节点生命周期，推进执行位置，挂接修复子树并提交节点状态。</span>
+          </div>
+          <div class="role">
+            <b>世界模型</b>
+            <span>接收观测结果并生成世界快照，不接受任务目标或计划输出改写事实。</span>
+          </div>
+          <div class="role">
+            <b>规划器</b>
+            <span>生成路线、抓取和放置方案，只输出带版本依赖的计划，不执行物理动作。</span>
+          </div>
+          <div class="role">
+            <b>物理运行时</b>
+            <span>检查方案版本、资源与安全约束，并作为机器人动作的唯一执行入口。</span>
+          </div>
+          <div class="role">
+            <b>条件验证器</b>
+            <span>只读取最新世界快照和完成条件，独立产生成功、失败或结果未知的验证结果；节点状态由任务树内核提交。</span>
+          </div>
+        </div>
+
+        <div class="control-rules">
+          <div class="rule-label">工作树唯一写入</div>
+          <div class="rule-text">任务树内核是工作树状态的唯一写入者；规划器、修复处理器和界面只能提交请求或读取结果。</div>
+          <div class="rule-label">运行记录要求</div>
+          <div class="rule-text">每次推进都关联当前任务节点、所用现场版本、所用方案版本、动作请求、动作结果和验收证据。</div>
+        </div>
+
+        <div class="subhead">九步标准流程</div>
+        <div class="nine-flow">
+          <div class="head">序号</div>
+          <div class="head">流程步骤</div>
+          <div class="head">系统行为</div>
+          <div class="head">关键约束</div>
+
+          <div class="step">1</div>
+          <div class="name">校验任务并创建根节点</div>
+          <div class="plain">检查六项任务要素，创建本任务独立的根节点和执行状态。</div>
+          <div class="professional">标准任务校验与根节点编译。</div>
+
+          <div class="step">2</div>
+          <div class="name">读取快照并绑定实体</div>
+          <div class="plain">读取最新世界快照，绑定具体绿球、盘子和机器人状态。</div>
+          <div class="professional">读取不可变世界快照并进行实体绑定。</div>
+
+          <div class="step decision">3</div>
+          <div class="name">检查目标状态</div>
+          <div class="plain">若绿球已在盘内且夹爪为空，根节点直接进入验收。</div>
+          <div class="professional">目标满足检查与跳过执行策略。</div>
+
+          <div class="step decision">4</div>
+          <div class="name">检查前置条件</div>
+          <div class="plain">检查盘子为空、夹爪可用等条件；失败时生成结构化诊断。</div>
+          <div class="professional">前置条件检查与结构化诊断。</div>
+
+          <div class="step">5</div>
+          <div class="name">展开当前节点</div>
+          <div class="plain">把放置展开为对象解析、规划、抓取、持物移动、释放和验收。</div>
+          <div class="professional">按任务类型展开运行时任务树。</div>
+
+          <div class="step">6</div>
+          <div class="name">生成版本化方案</div>
+          <div class="plain">比较接近方向、路线、抓取姿态和放置姿态，并记录版本依赖。</div>
+          <div class="professional">生成带世界版本依赖的不可变计划。</div>
+
+          <div class="step physical">7</div>
+          <div class="name">执行受控动作</div>
+          <div class="plain">重新检查方案有效性、资源和安全约束，再向机器人发送动作请求。</div>
+          <div class="professional">统一物理动作入口、操作去重、安全调度和事务记录。</div>
+
+          <div class="step evidence">8</div>
+          <div class="name">重新观测并更新世界</div>
+          <div class="plain">动作后生成新世界快照；证据不足时结合动作事务和设备状态对账。</div>
+          <div class="professional">生成新世界快照后，先完成结果对账，再检查旧方案是否失效。</div>
+
+          <div class="step evidence">9</div>
+          <div class="name">验证并提交节点状态</div>
+          <div class="plain">条件满足则提交成功；可恢复失败挂接修复子树；达到上限则提交失败。</div>
+          <div class="professional">后置条件验证、状态与事件提交、后续分支选择。</div>
+        </div>
+
+        <div class="result-meanings">
+          <div class="result-title">动作结果与任务状态分离</div>
+          <div class="result-grid">
+            <div class="result-card action">
+              <b>动作报告成功</b>
+              <span>设备接受或完成本次动作，只表示动作层返回正常，不代表任务条件已经满足。</span>
+            </div>
+            <div class="result-card task">
+              <b>任务验收成功</b>
+              <span>新世界快照满足当前节点或根任务的完成条件后，任务树内核才提交成功。</span>
+            </div>
+            <div class="result-card unknown">
+              <b>结果未知</b>
+              <span>证据不足以判定成功或失败时，先用动作事务、设备状态和新世界快照对账；结论明确前不得重放可能产生物理副作用的动作。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">05 / 递归修复</div>
+          <div>
+            <h2>递归修复：黄箱阻塞实例</h2>
+            <p class="section-summary">
+              规划失败先形成结构化诊断。任务树内核校验修复提案后挂接修复子树，修复完成再返回父节点重新规划。
+            </p>
+          </div>
+        </div>
+
+        <div class="repair-tree">
+          <div class="main-task">
+            <b>主任务：把绿球放入空盘子</b>
+            <span>任务树内核保留父节点、执行位置和最终目标</span>
+          </div>
+          <div class="tree-down"></div>
+          <div class="condition-fail">规划失败：正面被黄箱占用，左右和后方均无安全通路</div>
+
+          <div class="repair-row">
+            <div class="repair-node active">
+              <b>修复入口节点</b>
+              <span>把阻挡通道的黄箱移到一个已经确认可用的停放区。</span>
+              <em>按标准任务契约执行</em>
+            </div>
+            <div class="repair-arrow">→</div>
+            <div class="repair-node">
+              <b>执行修复子树</b>
+              <span>确认停放区、规划抓箱、移动、释放、重新观察并验收。</span>
+              <em>受相同的执行、安全和验收约束</em>
+            </div>
+            <div class="repair-arrow">→</div>
+            <div class="repair-node return">
+              <b>返回父节点</b>
+              <span>新世界快照确认黄箱在停放区、通道已恢复，父节点重新规划。</span>
+              <em>修复结果必须由新观测验证</em>
+            </div>
+          </div>
+        </div>
+
+        <div class="repair-rules">
+          <div class="repair-rule">
+            <b>保留父节点</b>
+            <span>修复子树不覆盖原目标，完成后返回原执行位置。</span>
+          </div>
+          <div class="repair-rule">
+            <b>使用相同任务契约</b>
+            <span>修复节点同样包含对象、目标、条件、方案、动作和验收。</span>
+          </div>
+          <div class="repair-rule">
+            <b>允许递归挂接</b>
+            <span>修复节点遇到可恢复失败时，可以继续挂接下一层修复子树。</span>
+          </div>
+          <div class="repair-rule">
+            <b>深度与次数受限</b>
+            <span>节点和系统均设置重试、修复与对账上限。</span>
+          </div>
+        </div>
+
+        <div class="route-note">
+          <b>搬黄箱前的四项证据</b>
+          <span>
+            仅在四个方向均确认无安全绕行、候选快照中移除黄箱后路线恢复、黄箱可搬动且停放区可用时，
+            才挂接“搬黄箱”修复任务。
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">06 / 绿球实例</div>
+          <div>
+            <h2>绿球放置任务：搬箱修复后的运行记录</h2>
+            <p class="section-summary">
+              初始世界中盘子为空，黄箱占用唯一安全通道。系统先挂接搬箱修复子树，再返回父节点完成绿球放置。
+            </p>
+          </div>
+        </div>
+
+        <div class="case-layout">
+          <div class="scene">
+            <svg viewBox="0 0 900 700" role="img" aria-label="绿球放入空盘子任务初始现场">
+              <rect x="1" y="1" width="898" height="698" fill="#f3f5f5" stroke="#8c989e" stroke-width="2"/>
+              <text x="30" y="43" fill="#25363e" font-size="23" font-weight="700">第 1 版世界快照</text>
+              <text x="30" y="72" fill="#66747b" font-size="16">盘子为空，黄箱占用桌前通道，绿球在地面，机器人夹爪为空</text>
+
+              <rect x="245" y="112" width="410" height="185" fill="#bca986" stroke="#6d6048" stroke-width="4"/>
+              <text x="410" y="145" fill="#4f4738" font-size="21" font-weight="700">桌面</text>
+
+              <ellipse cx="535" cy="224" rx="92" ry="34" fill="#fafcfc" stroke="#596d77" stroke-width="5"/>
+              <ellipse cx="535" cy="224" rx="65" ry="22" fill="#e4eaec" stroke="#87979f" stroke-width="2"/>
+              <text x="572" y="219" fill="#356b91" font-size="17" font-weight="700">空盘子</text>
+
+              <rect x="135" y="298" width="190" height="247" fill="#9ca7ad" stroke="#58656c" stroke-width="3"/>
+              <rect x="575" y="298" width="190" height="247" fill="#9ca7ad" stroke="#58656c" stroke-width="3"/>
+              <text x="173" y="574" fill="#5e6b72" font-size="16">左侧固定挡板</text>
+              <text x="613" y="574" fill="#5e6b72" font-size="16">右侧固定挡板</text>
+
+              <rect x="370" y="368" width="160" height="132" fill="none" stroke="#c88a21" stroke-width="3" stroke-dasharray="9 7"/>
+              <rect x="400" y="395" width="100" height="82" fill="#daa632" stroke="#8c620d" stroke-width="5"/>
+              <text x="362" y="526" fill="#8c620d" font-size="18" font-weight="700">黄箱占用唯一安全通道</text>
+
+              <circle cx="282" cy="616" r="28" fill="#3e9858" stroke="#27683d" stroke-width="5"/>
+              <text x="320" y="622" fill="#27683d" font-size="18" font-weight="700">绿球在地面</text>
+
+              <g transform="translate(485,622)">
+                <rect x="-45" y="-34" width="90" height="68" fill="#356b91" stroke="#1d4c69" stroke-width="4"/>
+                <circle cx="0" cy="-44" r="17" fill="#d9e9f3" stroke="#1d4c69" stroke-width="4"/>
+                <line x1="-17" y1="5" x2="-54" y2="-13" stroke="#1d4c69" stroke-width="8"/>
+                <line x1="17" y1="5" x2="54" y2="-13" stroke="#1d4c69" stroke-width="8"/>
+              </g>
+              <text x="543" y="627" fill="#1d4c69" font-size="17" font-weight="700">夹爪为空</text>
+
+              <path d="M485 575 C 485 545, 468 515, 452 482"
+                    fill="none" stroke="#ae4d44" stroke-width="5" stroke-dasharray="10 8"/>
+              <text x="444" y="488" fill="#ae4d44" font-size="26" font-weight="700">×</text>
+
+              <path d="M450 590 C 360 565, 330 485, 329 365"
+                    fill="none" stroke="#748187" stroke-width="4" stroke-dasharray="9 8"/>
+              <text x="316" y="372" fill="#ae4d44" font-size="25" font-weight="700">×</text>
+
+              <path d="M520 590 C 610 565, 570 485, 571 365"
+                    fill="none" stroke="#748187" stroke-width="4" stroke-dasharray="9 8"/>
+              <text x="563" y="372" fill="#ae4d44" font-size="25" font-weight="700">×</text>
+
+              <rect x="770" y="584" width="105" height="72" fill="#e8f2eb" stroke="#34784f" stroke-width="3" stroke-dasharray="8 6"/>
+              <text x="781" y="625" fill="#34784f" font-size="16" font-weight="700">可用停放区</text>
+              <text x="30" y="677" fill="#84413a" font-size="16" font-weight="700">正面受黄箱阻挡；左右通道低于安全间距；后方没有可用接近区</text>
+            </svg>
+          </div>
+
+          <div class="case-task">
+            <h3>任务契约</h3>
+            <div class="case-question">
+              <b>任务类型</b><span>放置</span>
+              <b>目标对象</b><span>一个绿色球状可搬物</span>
+              <b>目标区域</b><span>一个盘子的内部区域</span>
+              <b>前置条件</b><span>盘子内部必须为空</span>
+              <b>完成条件</b><span>绿球在盘内，夹爪不再持有绿球</span>
+              <b>修复策略</b><span>无安全路线时检查所有方向；满足搬障碍证据后把黄箱移到停放区；次数有限</span>
+              <b>初始状态</b><span>盘子为空；黄箱占用唯一安全通道；夹爪为空</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="case-timeline">
+          <div class="head">阶段</div>
+          <div class="head">工作树状态</div>
+          <div class="head">系统做什么</div>
+          <div class="head">现场证据</div>
+
+          <div class="when">第一段：初始世界</div>
+          <div class="tree">主任务进入规划</div>
+          <div>绑定绿球和盘子，确认盘子为空，再比较正面、左侧、右侧和后侧路线。</div>
+          <div class="world">正面被黄箱占用，侧向受固定挡板限制，后方无可用接近区。</div>
+
+          <div class="when">第二段：插入修复任务</div>
+          <div class="tree">主任务暂停，激活修复节点</div>
+          <div>候选计算确认黄箱离开通道后路线恢复，新建“把黄箱移到停放区”的标准任务。</div>
+          <div class="world">任务树内核挂接修复子树，现实尚未变化。</div>
+
+          <div class="when">第三段：搬箱后的新世界</div>
+          <div class="tree">修复节点完成，返回父节点</div>
+          <div>黄箱被放入停放区并释放；新世界快照确认结果，修复子树结束。</div>
+          <div class="world">黄箱在停放区，桌前通道恢复，盘子和夹爪为空。</div>
+
+          <div class="when">第四段：抓取后的新世界</div>
+          <div class="tree">主任务已经抓住绿球</div>
+          <div>基于新世界重新规划并抓取绿球，验收“绿球已被持有”。</div>
+          <div class="world">绿球在夹爪中，盘子仍为空。</div>
+
+          <div class="when">第五段：最终世界</div>
+          <div class="tree">最终验收通过，根任务结束</div>
+          <div>把绿球放入盘内并释放，重新观察后检查两项完成条件。</div>
+          <div class="world">绿球在盘内，夹爪为空。</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-head">
+          <div class="section-no">07 / 架构评审</div>
+          <div>
+            <h2>评审要点与当前验证范围</h2>
+            <p class="section-summary">
+              以下问题对应系统必须保持的运行约束；实现范围按当前参考版本说明，不外推为生产能力。
+            </p>
+          </div>
+        </div>
+
+        <div class="boss-check">
+          <div class="head">评审问题</div>
+          <div class="head">系统约束</div>
+          <div class="head">控制目标</div>
+
+          <div class="question">任务契约、世界状态与运行进度是否分离？</div>
+          <div class="answer">任务单、世界快照和运行时工作树分别保存；工作树只有任务树内核可以更新。</div>
+          <div class="why">任务目标不能改写世界事实，世界事实也不能直接改写控制流。</div>
+
+          <div class="question">规划器是否具有物理写权限？</div>
+          <div class="answer">没有。规划器只生成版本化方案，机器人动作只能通过物理运行时执行。</div>
+          <div class="why">物理副作用集中在一个可检查、去重和审计的入口。</div>
+
+          <div class="question">世界版本变化后旧方案如何处理？</div>
+          <div class="answer">方案记录世界和对象版本依赖；依赖不匹配时拒绝执行并重新规划。</div>
+          <div class="why">目标、障碍物或机器人状态变化后，不继续使用过期方案。</div>
+
+          <div class="question">递归修复是否受深度、次数和对账上限约束？</div>
+          <div class="answer">节点和系统均设置重试、修复深度、修复次数和结果对账上限。</div>
+          <div class="why">限制无限递归、重复动作和无边界的环境改造。</div>
+
+          <div class="question">任务完成状态由哪个组件基于何种证据提交？</div>
+          <div class="answer">条件验证器读取动作后的新世界快照并产生验证结果，由任务树内核提交节点状态。</div>
+          <div class="why">动作报告、设备状态和任务完成状态保持分离。</div>
+        </div>
+
+        <div class="implementation-boundary">
+          <div class="boundary-title">当前验证范围：内存状态、参考模拟环境、串行任务和本地单操作者；生产化能力尚未完成</div>
+          <div class="boundary-grid">
+            <div class="boundary-box">
+              <b>当前实现</b>
+              <span>支持单任务执行、递归修复、结果对账、事件回放和故障注入，用于验证运行约束和接口边界。</span>
+            </div>
+            <div class="boundary-box">
+              <b>待补齐能力</b>
+              <span>状态持久化与恢复、真实设备接入、并行资源调度、多操作者权限、运行监控和持续评测。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

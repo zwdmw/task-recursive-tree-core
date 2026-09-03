@@ -1,0 +1,70 @@
+flowchart TB
+    subgraph INPUT["1 输入与持续会话"]
+        USER["操作员<br/>语音 / 文本 / 暂停 / 继续"]
+        UI["浏览器控制台 + HTTP<br/>提交任务；只读查看树、栈、事件和状态"]
+        SESSION["SceneSessionManager / ContinuousTaskSession<br/>串行接收任务；保留当前物理世界"]
+        AGENT["GeminiER2 自然语言 Agent<br/>LLM 规划、澄清、目标解析、槽位绑定"]
+        USER --> UI --> SESSION --> AGENT
+    end
+
+    subgraph COMPILE["2 编译与边界翻译"]
+        HC["Harness TaskCompiler<br/>生成编译期 TaskTree DTO"]
+        KCB["KernelCompilerBridge<br/>translate_harness_tree()"]
+        DEF["TaskTreeDefinition<br/>根节点 + 类型化 GraphDelta"]
+        KEB["KernelExecutorBridge<br/>装配 Store、Kernel、适配器和只读投影"]
+        AGENT --> HC --> KCB --> DEF --> KEB
+    end
+
+    subgraph TASK["3 每个任务新建的递归任务树运行时"]
+        KERNEL["TaskTreeKernel<br/>唯一节点生命周期解释器<br/>唯一 Store 写入者"]
+        STORE["TaskTreeStore<br/>唯一权威运行时树状态<br/>节点规格 / 运行态 / 边 / 执行栈 / 事件"]
+        DECOMP["任务分解器<br/>HarnessBuiltinTaskDecomposerAdapter"]
+        OPS["系统操作<br/>HarnessSystemOperationAdapter<br/>感知 / 绑定 / 规划 / 校验"]
+        ART["HarnessArtifactBridge<br/>工件发布与消费契约"]
+        SKILL["物理技能适配器<br/>HarnessMacroActionSkill<br/>节点 + 工件 → MacroActionRequest"]
+        SEM["节点语义验证<br/>GeminiER2NodeSemantics"]
+        REPAIR["HarnessRepairResolver<br/>Diagnostic → RepairProposal(GraphDelta)"]
+
+        KEB --> KERNEL
+        KERNEL -->|"唯一写入"| STORE
+        STORE -. "只读状态" .-> KERNEL
+        KERNEL -->|"展开复合节点"| DECOMP
+        DECOMP -->|"GraphDelta"| KERNEL
+        KERNEL -->|"运行系统节点"| OPS
+        OPS -->|"发布规划工件"| ART
+        KERNEL -->|"运行物理节点"| SKILL
+        ART -->|"解析工件契约"| SKILL
+        KERNEL -->|"目标 / 前置 / 后置"| SEM
+        KERNEL -->|"结构化失败"| REPAIR
+        REPAIR -->|"校验并挂载 repair 子树"| KERNEL
+    end
+
+    subgraph SHARED["4 跨任务复用的物理执行与世界状态"]
+        GATEWAY["HarnessPhysicalGateway<br/>普通动作 / system_only 分流"]
+        RUNTIME["HarnessRuntime + ToolRegistry<br/>新鲜度 / 安全策略 / 租约 / 事务 / 对账"]
+        ROBOT["MuJoCo / RobotBackend<br/>底盘、机械臂、夹爪"]
+        OBS["Observation / 感知<br/>每条物理命令后采样"]
+        WORLD["World Model<br/>更新实体与机器人状态"]
+
+        SKILL --> GATEWAY --> RUNTIME --> ROBOT --> OBS --> WORLD
+    end
+
+    WORLD -. "不可变世界快照" .-> OPS
+    WORLD -. "实时语义证据" .-> SEM
+    WORLD -. "下一任务从新世界继续" .-> SESSION
+
+    classDef input fill:#fff1ec,stroke:#d56c50,color:#17242d,stroke-width:2px;
+    classDef harness fill:#e9f6f2,stroke:#27836f,color:#17242d,stroke-width:2px;
+    classDef bridge fill:#edf3fb,stroke:#4a75a5,color:#17242d,stroke-width:2px;
+    classDef kernel fill:#fff4d2,stroke:#c48712,color:#17242d,stroke-width:3px;
+    classDef store fill:#f3eefb,stroke:#7b5aa5,color:#17242d,stroke-width:2px;
+    classDef repair fill:#fdeef3,stroke:#ad476c,color:#17242d,stroke-width:2px;
+    classDef world fill:#eef7ea,stroke:#598c4f,color:#17242d,stroke-width:2px;
+
+    class USER,UI input;
+    class SESSION,AGENT,HC,SEM,RUNTIME harness;
+    class KCB,KEB,SKILL,GATEWAY bridge;
+    class DEF,KERNEL kernel;
+    class STORE,ART store;
+    class REPAIR repair;
+    class DECOMP,OPS,ROBOT,OBS,WORLD world;

@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1800"
+     height="1410"
+     viewBox="0 0 1800 1410"
+     role="img"
+     aria-labelledby="diagram-title diagram-desc">
+  <title id="diagram-title">Task Recursive Tree Agent 框架构建图</title>
+  <desc id="diagram-desc">
+    中文分层架构图，展示操作入口、GeminiER2 编译桥、TaskTreeKernel、
+    TaskTreeStore、三类节点适配器、递归修复、物理执行以及世界观测反馈。
+  </desc>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10"
+            refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#495864"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10"
+            refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#27836f"/>
+    </marker>
+    <marker id="arrow-repair" markerWidth="10" markerHeight="10"
+            refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ad476c"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3"
+                    flood-color="#24333d" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      text {
+        font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC",
+                     Arial, sans-serif;
+        fill: #17242d;
+        letter-spacing: 0;
+      }
+      .title { font-size: 36px; font-weight: 700; }
+      .subtitle { font-size: 18px; fill: #51616b; }
+      .band { fill: #ffffff; stroke: #cfd8dc; stroke-width: 1.5; }
+      .band-title { font-size: 22px; font-weight: 700; }
+      .band-note { font-size: 14px; fill: #62717a; }
+      .box-title { font-size: 20px; font-weight: 700; }
+      .box-subtitle { font-size: 15px; fill: #41515b; }
+      .small { font-size: 13px; fill: #596871; }
+      .tiny { font-size: 12px; fill: #66757d; }
+      .arrow {
+        fill: none;
+        stroke: #495864;
+        stroke-width: 2.2;
+        marker-end: url(#arrow);
+      }
+      .arrow-dashed {
+        fill: none;
+        stroke: #6d7a82;
+        stroke-width: 2;
+        stroke-dasharray: 7 6;
+        marker-end: url(#arrow);
+      }
+      .feedback {
+        fill: none;
+        stroke: #27836f;
+        stroke-width: 2.5;
+        marker-end: url(#arrow-green);
+      }
+      .repair {
+        fill: none;
+        stroke: #ad476c;
+        stroke-width: 2.5;
+        marker-end: url(#arrow-repair);
+      }
+      .label-bg { fill: #ffffff; opacity: 0.94; }
+      .step {
+        font-size: 15px;
+        font-weight: 700;
+        fill: #ffffff;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1410" fill="#f4f6f3"/>
+
+  <text id="diagram-title-text" x="60" y="56" class="title">
+    Task Recursive Tree Agent 框架构建图
+  </text>
+  <text x="60" y="88" class="subtitle">
+    一句话理解：LLM 决定“想做什么”，任务树内核决定“现在做哪一步”，Harness 执行动作，观测结果决定成功或递归修复。
+  </text>
+
+  <g transform="translate(1080,28)">
+    <rect x="0" y="0" width="18" height="18" rx="3" fill="#fff1ec" stroke="#d56c50"/>
+    <text x="27" y="15" class="small">入口与交互</text>
+    <rect x="145" y="0" width="18" height="18" rx="3" fill="#e9f6f2" stroke="#27836f"/>
+    <text x="172" y="15" class="small">GeminiER2 / Harness</text>
+    <rect x="365" y="0" width="18" height="18" rx="3" fill="#fff4d2" stroke="#c48712"/>
+    <text x="392" y="15" class="small">任务树内核</text>
+    <rect x="505" y="0" width="18" height="18" rx="3" fill="#fdeef3" stroke="#ad476c"/>
+    <text x="532" y="15" class="small">失败与修复</text>
+  </g>
+
+  <!-- 1. Input and continuous session -->
+  <rect x="40" y="110" width="1720" height="170" rx="8" class="band"/>
+  <text x="60" y="144" class="band-title">1  输入与持续会话</text>
+  <text x="60" y="168" class="band-note">操作员只通过控制台提交任务和控制会话，不直接操作节点、规划器或机器人。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="190" y="184" width="250" height="70" rx="8"
+          fill="#fff1ec" stroke="#d56c50" stroke-width="2"/>
+    <rect x="500" y="184" width="300" height="70" rx="8"
+          fill="#fff1ec" stroke="#d56c50" stroke-width="2"/>
+    <rect x="860" y="174" width="360" height="90" rx="8"
+          fill="#e9f6f2" stroke="#27836f" stroke-width="2"/>
+    <rect x="1280" y="174" width="430" height="90" rx="8"
+          fill="#e9f6f2" stroke="#27836f" stroke-width="2"/>
+  </g>
+
+  <circle cx="205" cy="197" r="13" fill="#d56c50"/>
+  <text x="205" y="197" class="step">1</text>
+  <text x="315" y="214" class="box-title" text-anchor="middle">操作员</text>
+  <text x="315" y="238" class="box-subtitle" text-anchor="middle">语音 / 文本 / 暂停 / 继续</text>
+
+  <text x="650" y="212" class="box-title" text-anchor="middle">浏览器控制台 + HTTP</text>
+  <text x="650" y="238" class="box-subtitle" text-anchor="middle">提交任务；只读查看树、栈、事件和状态</text>
+
+  <text x="1040" y="206" class="box-title" text-anchor="middle">场景与持续会话管理</text>
+  <text x="1040" y="232" class="box-subtitle" text-anchor="middle">SceneSessionManager / ContinuousTaskSession</text>
+  <text x="1040" y="252" class="small" text-anchor="middle">串行接收任务；保留当前物理世界</text>
+
+  <text x="1495" y="205" class="box-title" text-anchor="middle">GeminiER2 自然语言 Agent</text>
+  <text x="1495" y="231" class="box-subtitle" text-anchor="middle">LLM 规划、澄清、目标解析、槽位绑定</text>
+  <text x="1495" y="251" class="small" text-anchor="middle">输出受约束的程序/任务意图</text>
+
+  <path d="M440 219 H500" class="arrow"/>
+  <path d="M800 219 H860" class="arrow"/>
+  <path d="M1220 219 H1280" class="arrow"/>
+
+  <!-- 2. Compile and bridge -->
+  <rect x="40" y="300" width="1720" height="190" rx="8" class="band"/>
+  <text x="60" y="334" class="band-title">2  编译与边界翻译</text>
+  <text x="60" y="358" class="band-note">这里把 Harness 的任务表达翻译成内核可验证的数据结构，同时切断旧执行器对运行时树的所有权。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="190" y="382" width="300" height="78" rx="8"
+          fill="#e9f6f2" stroke="#27836f" stroke-width="2"/>
+    <rect x="550" y="382" width="300" height="78" rx="8"
+          fill="#edf3fb" stroke="#4a75a5" stroke-width="2"/>
+    <rect x="910" y="382" width="320" height="78" rx="8"
+          fill="#fff4d2" stroke="#c48712" stroke-width="2"/>
+    <rect x="1290" y="372" width="420" height="98" rx="8"
+          fill="#edf3fb" stroke="#4a75a5" stroke-width="2"/>
+  </g>
+
+  <circle cx="205" cy="395" r="13" fill="#27836f"/>
+  <text x="205" y="395" class="step">2</text>
+  <text x="340" y="413" class="box-title" text-anchor="middle">Harness TaskCompiler</text>
+  <text x="340" y="439" class="box-subtitle" text-anchor="middle">生成编译期 TaskTree DTO</text>
+
+  <circle cx="565" cy="395" r="13" fill="#4a75a5"/>
+  <text x="565" y="395" class="step">3</text>
+  <text x="700" y="413" class="box-title" text-anchor="middle">KernelCompilerBridge</text>
+  <text x="700" y="439" class="box-subtitle" text-anchor="middle">translate_harness_tree()</text>
+
+  <text x="1070" y="413" class="box-title" text-anchor="middle">TaskTreeDefinition</text>
+  <text x="1070" y="439" class="box-subtitle" text-anchor="middle">根节点 + 类型化 GraphDelta</text>
+
+  <circle cx="1305" cy="385" r="13" fill="#4a75a5"/>
+  <text x="1305" y="385" class="step">4</text>
+  <text x="1500" y="405" class="box-title" text-anchor="middle">KernelExecutorBridge</text>
+  <text x="1500" y="431" class="box-subtitle" text-anchor="middle">装配 Store、Kernel、适配器和只读投影</text>
+  <text x="1500" y="452" class="small" text-anchor="middle">每个新任务创建一套新的树执行环境</text>
+
+  <path d="M490 421 H550" class="arrow"/>
+  <path d="M850 421 H910" class="arrow"/>
+  <path d="M1230 421 H1290" class="arrow"/>
+  <rect x="580" y="466" width="650" height="18" rx="4" fill="#fff8e4"/>
+  <text x="905" y="480" class="small" text-anchor="middle">
+    关键边界：Harness TaskTree 只作编译/恢复 DTO；翻译后由 TaskTreeStore 成为唯一运行时树。
+  </text>
+
+  <!-- 3. Per-task runtime -->
+  <rect x="40" y="510" width="1720" height="560" rx="8"
+        fill="#fffdf7" stroke="#d7cba5" stroke-width="1.5"/>
+  <text x="60" y="546" class="band-title">3  递归任务树运行时</text>
+  <text x="60" y="570" class="band-note">
+    每个任务新建：TaskTreeStore、TaskTreeKernel、Inspector/Projection；树与上一个任务完全分离。
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="190" y="600" width="330" height="120" rx="8"
+          fill="#eef7ea" stroke="#598c4f" stroke-width="2"/>
+    <rect x="190" y="760" width="330" height="160" rx="8"
+          fill="#eef7ea" stroke="#598c4f" stroke-width="2"/>
+    <rect x="590" y="590" width="450" height="190" rx="8"
+          fill="#fff4d2" stroke="#c48712" stroke-width="3"/>
+    <rect x="1120" y="590" width="500" height="190" rx="8"
+          fill="#f3eefb" stroke="#7b5aa5" stroke-width="2"/>
+    <rect x="590" y="840" width="420" height="115" rx="8"
+          fill="#eaf3fb" stroke="#3e78a7" stroke-width="2"/>
+    <rect x="1060" y="840" width="300" height="115" rx="8"
+          fill="#f3eefb" stroke="#7b5aa5" stroke-width="2"/>
+    <rect x="1410" y="840" width="250" height="115" rx="8"
+          fill="#e9f6f2" stroke="#27836f" stroke-width="2"/>
+    <rect x="590" y="980" width="770" height="70" rx="8"
+          fill="#fdeef3" stroke="#ad476c" stroke-width="2"/>
+    <rect x="190" y="950" width="330" height="70" rx="8"
+          fill="#f7f8f4" stroke="#87939a" stroke-width="1.5"/>
+  </g>
+
+  <text x="355" y="632" class="box-title" text-anchor="middle">任务分解器</text>
+  <text x="355" y="658" class="box-subtitle" text-anchor="middle">HarnessBuiltinTaskDecomposerAdapter</text>
+  <text x="355" y="682" class="small" text-anchor="middle">复合任务 → 子节点 GraphDelta</text>
+  <text x="355" y="703" class="small" text-anchor="middle">不能访问 Runtime 或机器人后端</text>
+
+  <text x="355" y="793" class="box-title" text-anchor="middle">系统操作</text>
+  <text x="355" y="819" class="box-subtitle" text-anchor="middle">HarnessSystemOperationAdapter</text>
+  <text x="355" y="846" class="small" text-anchor="middle">感知 / 绑定 / 规划 / 只读工具 / 校验</text>
+  <text x="355" y="870" class="small" text-anchor="middle">发布路线、姿态、抓取等工件</text>
+  <text x="355" y="894" class="small" text-anchor="middle">A*、IK、RRT 只在此层内部实现</text>
+
+  <circle cx="607" cy="607" r="13" fill="#c48712"/>
+  <text x="607" y="607" class="step">5</text>
+  <text x="815" y="626" class="box-title" text-anchor="middle">TaskTreeKernel</text>
+  <text x="815" y="652" class="box-subtitle" text-anchor="middle">唯一节点生命周期解释器 + 唯一 Store 写入者</text>
+  <rect x="626" y="674" width="378" height="29" rx="5" fill="#fffaf0" stroke="#dec787"/>
+  <text x="815" y="694" class="small" text-anchor="middle">
+    进入 → 目标检查 → 前置条件 → 执行/展开
+  </text>
+  <rect x="626" y="712" width="378" height="29" rx="5" fill="#fffaf0" stroke="#dec787"/>
+  <text x="815" y="732" class="small" text-anchor="middle">
+    子节点 → 后置验证 → 修复/对账 → 完成
+  </text>
+  <text x="815" y="760" class="tiny" text-anchor="middle">
+    sequence / selector 控制流；重试、暂停、取消、预算统一在内核处理
+  </text>
+
+  <text x="1370" y="623" class="box-title" text-anchor="middle">TaskTreeStore</text>
+  <text x="1370" y="649" class="box-subtitle" text-anchor="middle">唯一权威运行时树状态</text>
+  <text x="1160" y="681" class="small">• 不可变 TaskNodeSpec</text>
+  <text x="1390" y="681" class="small">• 独立 TaskNodeRuntime</text>
+  <text x="1160" y="707" class="small">• child / repair 边</text>
+  <text x="1390" y="707" class="small">• 持久执行栈</text>
+  <text x="1160" y="733" class="small">• 追加式事件日志</text>
+  <text x="1390" y="733" class="small">• 原子变更与不变量校验</text>
+  <text x="1370" y="760" class="tiny" text-anchor="middle">
+    KernelTreeProjection / Inspector 只读输出给 Harness 与浏览器
+  </text>
+
+  <circle cx="607" cy="857" r="13" fill="#3e78a7"/>
+  <text x="607" y="857" class="step">6</text>
+  <text x="800" y="876" class="box-title" text-anchor="middle">物理技能适配器</text>
+  <text x="800" y="902" class="box-subtitle" text-anchor="middle">HarnessMacroActionSkill</text>
+  <text x="800" y="928" class="small" text-anchor="middle">节点 + 工件 → 带稳定 request_id 的 MacroActionRequest</text>
+
+  <text x="1210" y="876" class="box-title" text-anchor="middle">HarnessArtifactBridge</text>
+  <text x="1210" y="902" class="box-subtitle" text-anchor="middle">工件发布 / 消费契约</text>
+  <text x="1210" y="928" class="small" text-anchor="middle">快照、生产者、续接节点、安全策略</text>
+
+  <circle cx="1427" cy="857" r="13" fill="#27836f"/>
+  <text x="1427" y="857" class="step">7</text>
+  <text x="1535" y="876" class="box-title" text-anchor="middle">节点语义验证</text>
+  <text x="1535" y="902" class="box-subtitle" text-anchor="middle">GeminiER2NodeSemantics</text>
+  <text x="1535" y="928" class="small" text-anchor="middle">目标 / 前置 / 后置条件</text>
+
+  <circle cx="607" cy="997" r="13" fill="#ad476c"/>
+  <text x="607" y="997" class="step">8</text>
+  <text x="975" y="1005" class="box-title" text-anchor="middle">
+    HarnessRepairResolver：Diagnostic → RepairProposal(GraphDelta)
+  </text>
+  <text x="975" y="1032" class="box-subtitle" text-anchor="middle">
+    内核校验后挂载 repair 子树；修复成功，再重试原失败节点
+  </text>
+
+  <text x="355" y="976" class="box-subtitle" text-anchor="middle">三类节点，职责分离</text>
+  <text x="355" y="998" class="small" text-anchor="middle">分解器 / 系统操作 / 物理动作</text>
+
+  <!-- Runtime arrows -->
+  <path d="M520 635 H590" class="arrow"/>
+  <text x="555" y="625" class="tiny" text-anchor="middle">展开</text>
+  <path d="M590 694 H520" class="arrow-dashed"/>
+  <text x="555" y="714" class="tiny" text-anchor="middle">GraphDelta</text>
+
+  <path d="M1040 635 H1120" class="arrow"/>
+  <text x="1080" y="625" class="tiny" text-anchor="middle">写入</text>
+  <path d="M1120 705 H1040" class="arrow-dashed"/>
+  <text x="1080" y="726" class="tiny" text-anchor="middle">读取</text>
+
+  <path d="M590 742 H555 V815 H520" class="arrow"/>
+  <text x="545" y="783" class="tiny" text-anchor="end">运行系统节点</text>
+
+  <path d="M815 780 V840" class="arrow"/>
+  <path d="M980 780 V808 H1535 V840" class="arrow"/>
+
+  <path d="M520 804 H1038 V865 H1060" class="arrow-dashed"/>
+  <rect x="694" y="792" width="112" height="18" rx="4" class="label-bg"/>
+  <text x="750" y="806" class="tiny" text-anchor="middle">发布规划工件</text>
+
+  <path d="M1260 780 V840" class="arrow-dashed"/>
+  <path d="M1010 898 H1060" class="arrow"/>
+  <text x="1035" y="888" class="tiny" text-anchor="middle">取工件</text>
+
+  <path d="M590 752 H555 V1015 H590" class="repair"/>
+  <text x="545" y="967" class="tiny" text-anchor="end">结构化失败</text>
+  <path d="M980 980 V968 H1040 V808 H980 V780" class="repair"/>
+
+  <!-- 4. Shared physical runtime and world -->
+  <rect x="40" y="1090" width="1720" height="230" rx="8"
+        fill="#f6fbf9" stroke="#aacbc2" stroke-width="1.5"/>
+  <text x="60" y="1125" class="band-title">4  物理执行与世界反馈</text>
+  <text x="60" y="1149" class="band-note">
+    跨任务复用：场景、World、感知、HarnessRuntime、事务账本和 MuJoCo/机器人后端持续存在。
+  </text>
+
+  <g filter="url(#shadow)">
+    <rect x="190" y="1180" width="280" height="92" rx="8"
+          fill="#eaf3fb" stroke="#3e78a7" stroke-width="2"/>
+    <rect x="520" y="1170" width="360" height="112" rx="8"
+          fill="#e9f6f2" stroke="#27836f" stroke-width="2"/>
+    <rect x="930" y="1180" width="270" height="92" rx="8"
+          fill="#f2f4f5" stroke="#66757d" stroke-width="2"/>
+    <rect x="1250" y="1180" width="230" height="92" rx="8"
+          fill="#eef7ea" stroke="#598c4f" stroke-width="2"/>
+    <rect x="1530" y="1180" width="220" height="92" rx="8"
+          fill="#eef7ea" stroke="#598c4f" stroke-width="2"/>
+  </g>
+
+  <text x="330" y="1213" class="box-title" text-anchor="middle">HarnessPhysicalGateway</text>
+  <text x="330" y="1239" class="box-subtitle" text-anchor="middle">普通动作 / system_only 分流</text>
+  <text x="330" y="1260" class="small" text-anchor="middle">失败路线立即作废</text>
+
+  <text x="700" y="1203" class="box-title" text-anchor="middle">HarnessRuntime + ToolRegistry</text>
+  <text x="700" y="1229" class="box-subtitle" text-anchor="middle">工件新鲜度、统一安全策略、资源租约</text>
+  <text x="700" y="1252" class="small" text-anchor="middle">事务、取消、物理宏动作、失败对账</text>
+  <text x="700" y="1273" class="tiny" text-anchor="middle">路线连续采样上限：5 mm / 0.5°</text>
+
+  <text x="1065" y="1217" class="box-title" text-anchor="middle">MuJoCo / RobotBackend</text>
+  <text x="1065" y="1244" class="box-subtitle" text-anchor="middle">底盘、机械臂、夹爪执行</text>
+
+  <text x="1365" y="1217" class="box-title" text-anchor="middle">Observation / 感知</text>
+  <text x="1365" y="1244" class="box-subtitle" text-anchor="middle">每条物理命令后采样</text>
+
+  <text x="1640" y="1217" class="box-title" text-anchor="middle">World Model</text>
+  <text x="1640" y="1244" class="box-subtitle" text-anchor="middle">更新实体与机器人状态</text>
+
+  <path d="M590 898 H535 V1102 H330 V1180" class="arrow"/>
+  <rect x="342" y="1094" width="190" height="19" rx="4" class="label-bg"/>
+  <text x="437" y="1108" class="tiny" text-anchor="middle">MacroActionRequest</text>
+
+  <path d="M470 1226 H520" class="arrow"/>
+  <path d="M880 1226 H930" class="arrow"/>
+  <path d="M1200 1226 H1250" class="arrow"/>
+  <path d="M1480 1226 H1530" class="arrow"/>
+
+  <!-- Snapshot feedback bus -->
+  <path d="M1640 1180 V1060 H355 V920" class="feedback"/>
+  <path d="M1535 1060 V955" class="feedback"/>
+  <rect x="1398" y="1048" width="172" height="19" rx="4" class="label-bg"/>
+  <text x="1484" y="1062" class="tiny" text-anchor="middle">不可变世界快照反馈</text>
+
+  <text x="1640" y="1300" class="small" text-anchor="middle">
+    下一条任务从更新后的世界继续
+  </text>
+
+  <!-- Bottom principles -->
+  <g>
+    <rect x="60" y="1342" width="400" height="42" rx="8"
+          fill="#fff1ec" stroke="#d56c50"/>
+    <rect x="480" y="1342" width="400" height="42" rx="8"
+          fill="#fff4d2" stroke="#c48712"/>
+    <rect x="900" y="1342" width="400" height="42" rx="8"
+          fill="#e9f6f2" stroke="#27836f"/>
+    <rect x="1320" y="1342" width="420" height="42" rx="8"
+          fill="#fdeef3" stroke="#ad476c"/>
+    <text x="260" y="1369" class="box-subtitle" text-anchor="middle">
+      LLM 只提交意图，不写运行时树
+    </text>
+    <text x="680" y="1369" class="box-subtitle" text-anchor="middle">
+      Store 只有 Kernel 能修改
+    </text>
+    <text x="1100" y="1369" class="box-subtitle" text-anchor="middle">
+      执行动作后必须观测与验证
+    </text>
+    <text x="1530" y="1369" class="box-subtitle" text-anchor="middle">
+      失败必须显式成为 repair 子树
+    </text>
+  </g>
+</svg>

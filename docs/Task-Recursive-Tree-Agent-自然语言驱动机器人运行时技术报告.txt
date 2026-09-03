@@ -1,0 +1,2741 @@
+Task Recursive Tree Agent：自然语言驱动机器人运行时技术报告
+
+文档定位：个人学习与技术思考版  
+这不是给管理层汇报的材料，而是尝试把整套架构拆开，回答一个核心问题：  
+这套系统是不是把机器人的执行过程，变成了一套自然语言驱动的运行时代码？
+
+分析基准日期：2026-08-30
+
+本文以当前仓库中的参考实现和 GeminiER2 适配层为依据。文中会明确区分：
+
+- 当前代码已经实现的机制；
+- 对这些机制的抽象理解；
+- 仍然属于未来生产化方向的能力。
+
+相关实现入口：
+
+- ARCHITECTURE.md (../ARCHITECTURE.md)
+- README.md (../README.md)
+- 核心任务模型 (../src/task_recursive_tree/task/model.py)
+- 任务内核 (../src/task_recursive_tree/task/kernel.py)
+- 世界状态模型 (../src/task_recursive_tree/world/state.py)
+- 工件模型 (../src/task_recursive_tree/artifacts/model.py)
+- 物理技能 (../src/task_recursive_tree/skills/physical.py)
+- 连续任务会话 (../src/task_recursive_tree/session/continuous.py)
+
+----------------------------------------------------------------
+1. 摘要
+
+1.1 核心结论
+
+可以把这套系统理解为“自然语言驱动的机器人领域运行时程序”，但不能简单理解成“自然语言直接变成机器人控制代码”。
+
+更精确的描述是：
+
+用户用自然语言表达目标；系统把目标规范化为类型化的 TaskProgram；再把它解释成可动态展开的任务递归树；任务树通过带版本依赖的规划工件生成物理动作请求；物理执行结果通过 Observation 回流到世界模型；内核根据证据决定继续、重试、对账、递归修复或终止。
+
+这句话里有三个层次不能混在一起：
+
+| 层次 | 它回答的问题 | 当前系统中的对应物 |
+| --- | --- | --- |
+| 意图层 | 人到底想让机器人做什么？ | 自然语言、LLM、TaskProgram |
+| 任务程序层 | 为了达成目标，需要经过哪些可解释步骤？ | TaskNodeSpec、TaskEdge、任务递归树 |
+| 物理执行层 | 机器人现在应该发出什么具体动作？动作是否真的完成？ | Artifact、ActionRequest、HarnessRuntime、Observation |
+
+因此，系统的真正创新点不在于“让模型会说话”，而在于：
+
+1. 把自然语言意图转换成受约束的任务程序；
+2. 把任务程序变成有状态、可追踪、可验证的运行时树；
+3. 把规划、动作、观察、验证和故障修复纳入同一条执行闭环；
+4. 让物理副作用必须经过显式任务节点和唯一物理入口；
+5. 让失败不再只是一个字符串，而是可以继续驱动程序演化的结构化数据。
+
+1.2 最简心智模型
+
+可以先记住下面这张图：
+
+自然语言
+   │
+   │  表达目标、约束、意图
+   ▼
+TaskProgram
+   │
+   │  编译成初始任务定义
+   ▼
+TaskNodeSpec + TaskEdge
+   │
+   │  运行时动态展开
+   ▼
+TaskTreeRuntime
+   │
+   │  读取世界、生成规划工件
+   ▼
+Artifact
+   │
+   │  转换成受限物理请求
+   ▼
+ActionRequest
+   │
+   │  唯一物理执行入口
+   ▼
+HarnessRuntime / RobotBackend
+   │
+   │  执行后必须观察
+   ▼
+Observation -> WorldSnapshot -> Verifier
+                         │
+                         ├── 成功：继续或完成
+                         ├── 过期：重新规划
+                         ├── 失败：诊断
+                         └── 可修复：挂载 repair 子树
+
+----------------------------------------------------------------
+2. 问题：为什么机器人需要“运行时程序”
+
+2.1 传统脚本能解决什么
+
+在环境固定、对象固定、动作成功率高的情况下，机器人可以执行预先写好的脚本：
+
+move_to_pick_stance()
+grasp("cup-red")
+move_to_drop_zone()
+release()
+
+这种方式简单、速度快，也容易在实验室里验证。但它隐含了很多假设：
+
+- 杯子一定存在；
+- 杯子的位置没有变化；
+- 收纳区没有被遮挡；
+- 规划出来的路线在执行时仍然有效；
+- 抓取一定成功；
+- 执行器返回成功就代表物体已经放好；
+- 任何失败都可以简单地从头再试。
+
+这些假设一旦进入真实场景，就会变得危险。
+
+2.2 机器人任务不是一次函数调用
+
+“把红杯子放到收纳区”表面上是一句话，实际上至少包含：
+
+找到红杯子
+找到收纳区
+确认对象和目标没有绑定错误
+计算适合的抓取方式
+找到抓取位置
+规划移动底盘路线
+规划机械臂接近路径
+执行抓取
+确认确实抓住了
+切换到持物姿态
+重新检查持物状态
+规划带载荷的运输路线
+移动到目标附近
+确认可以释放
+执行释放
+确认物体已经脱离夹爪
+确认物体确实位于目标区域
+
+其中每一步都可能受前一步结果和现实世界变化影响。
+
+所以问题已经不是：
+
+“调用哪个机器人 API？”
+
+而是：
+
+“在当前世界状态下，任务现在处于哪一步？下一步的前置条件是否满足？上一步的结果是否有证据？如果失败，失败是否可解释、可恢复？”
+
+这就是运行时的职责。
+
+2.3 为什么自然语言不能直接成为低层控制程序
+
+自然语言具有以下特点：
+
+- 允许省略；
+- 允许歧义；
+- 同一个目标有多种合理方案；
+- 不天然携带坐标、单位、坐标系和版本；
+- 不天然表达资源占用和安全边界；
+- 不天然区分“命令已发送”和“世界已经改变”。
+
+例如：
+
+“把左边那个杯子放进去。”
+
+系统必须进一步确定：
+
+左边是相对于谁？
+“那个杯子”是哪个实体？
+“进去”是进入哪个区域？
+允许杯子倾斜吗？
+如果有两个同样靠左的杯子怎么办？
+目标区域是否有容量？
+放置后需要满足什么距离和朝向？
+
+因此，自然语言更适合做高层源语言，不适合直接做物理执行指令集。
+
+----------------------------------------------------------------
+3. “自然语言驱动运行时代码”的准确含义
+
+这个说法可以拆成三个判断。
+
+3.1 自然语言是源语言：是
+
+用户表达：
+
+把红色杯子放到收纳区，并保持杯子直立。
+
+这相当于告诉系统：
+
+目标对象：一个满足“红色、杯子”的实体
+目标区域：一个满足“收纳区”的区域
+约束：放置后保持直立
+
+自然语言在这里表达的是：
+
+- 目标；
+- 约束；
+- 偏好；
+- 例外处理意图；
+- 对失败的高层解释。
+
+它不是直接规定每个关节的数值。
+
+3.2 任务递归树是领域专用运行时程序：是
+
+任务树中的每个节点不是一段任意代码，而是一个有明确语义的领域操作，例如：
+
+ResolveAndInspect
+PlanPick
+PlanTransfer
+ExecuteGrasp
+VerifyHeld
+NavigateHeld
+ExecuteRelease
+VerifyPlaceGoal
+
+节点拥有：
+
+- 任务类型；
+- 操作类型；
+- 控制类型；
+- 来源；
+- 参数；
+- 前置条件；
+- 后置条件；
+- 最大尝试次数；
+- 最大修复次数；
+- 是否允许在目标已满足时跳过；
+- 运行时状态；
+- 输出工件；
+- 最近诊断。
+
+这已经具备程序的核心特征：
+
+有结构
+有控制流
+有状态
+有输入输出
+有前置条件
+有后置条件
+有异常路径
+有执行栈
+有事件日志
+
+但它是机器人领域的专用程序，而不是通用 Python、JavaScript 或机器码。
+
+3.3 自然语言直接控制电机：不是
+
+真正调用机器人后端的路径被限制为：
+
+PhysicalSkill.build_request
+    -> ActionRequest
+    -> HarnessRuntime.execute
+    -> RobotBackend.execute
+    -> Observation
+
+LLM 没有直接获得 RobotBackend，也不能直接修改 TaskTreeStore。
+
+这不是额外的形式主义，而是整个架构能否被信任的关键。
+
+----------------------------------------------------------------
+4. 总体架构：一条“编译—解释—观察—修复”链路
+
+4.1 总体图
+
+flowchart TD
+    U[用户自然语言目标] --> L[LLM / Planner Adapter]
+    L --> P[规范化 TaskProgram]
+    P --> C[TaskCompiler / KernelCompilerBridge]
+    C --> S[TaskTreeStore]
+    K[TaskTreeKernel] --> S
+    S --> I[TaskTreeInspector]
+    K --> D[Decomposer]
+    K --> O[System Operations]
+    K --> SK[Physical Skills]
+    K --> R[Repair Resolver]
+    O --> W[WorldModel / WorldSnapshot]
+    O --> A[ArtifactStore]
+    O --> CAP[Domain Capabilities<br/>A* / IK / RRT]
+    CAP --> A
+    SK --> A
+    SK --> AR[ActionRequest]
+    AR --> H[HarnessRuntime]
+    H --> B[RobotBackend / MuJoCo]
+    B --> OB[Observation]
+    OB --> W
+    W --> V[Verifier]
+    V --> K
+    K --> DI[Diagnostic]
+    DI --> R
+    R --> GD[RepairProposal / GraphDelta]
+    GD --> K
+
+如果不方便渲染 Mermaid，可以按下面的层次理解：
+
+┌─────────────────────────────────────────────────────────────┐
+│  1. 意图层                                                   │
+│  用户语言 -> LLM -> TaskProgram                             │
+├─────────────────────────────────────────────────────────────┤
+│  2. 编译与任务层                                             │
+│  TaskCompiler -> TaskNodeSpec -> TaskTreeStore               │
+│                            ↑                                  │
+│                    TaskTreeKernel                            │
+├─────────────────────────────────────────────────────────────┤
+│  3. 能力与计划层                                             │
+│  Selector / A* / IK / RRT -> 不可变 Artifact                 │
+├─────────────────────────────────────────────────────────────┤
+│  4. 物理边界层                                               │
+│  PhysicalSkill -> ActionRequest -> HarnessRuntime            │
+│                                       -> RobotBackend         │
+├─────────────────────────────────────────────────────────────┤
+│  5. 证据闭环层                                               │
+│  Observation -> WorldModel -> WorldSnapshot -> Verifier       │
+│                                            -> Diagnostic      │
+│                                            -> Repair Tree     │
+└─────────────────────────────────────────────────────────────┘
+
+4.2 依赖方向
+
+依赖方向是有意设计的：
+
+任务树决定“下一步做什么”
+领域能力决定“这个动作怎样计算”
+物理技能决定“怎样把计划翻译成请求”
+HarnessRuntime 决定“请求是否有资格触碰真实设备”
+WorldModel 决定“现实状态是什么”
+Verifier 决定“目标是否有证据证明已经满足”
+
+相反的依赖被禁止：
+
+- 规划器不能直接修改任务树；
+- 谓词不能直接调用机器人；
+- 物理技能不能绕过运行时；
+- 修复器不能直接写入 Store；
+- LLM 不能伪造执行结果；
+- A*、IK、RRT 不能偷偷移动现实中的物体。
+
+----------------------------------------------------------------
+5. 用编译器和虚拟机来理解这套系统
+
+这是理解架构最有效的类比之一。
+
+5.1 对照表
+
+| 机器人 Agent 概念 | 编程语言运行时中的近似概念 | 说明 |
+| --- | --- | --- |
+| 自然语言 | 源代码 | 表达目标，但可能含糊 |
+| TaskProgram | AST / 中间表示 | 已经结构化、可校验 |
+| TaskNodeSpec | 函数定义或指令描述 | 静态语义，不记录本次执行进度 |
+| TaskNodeRuntime | 函数调用实例 / 栈帧状态 | 记录本次执行的状态和尝试次数 |
+| TaskEdge | 控制流边 / 依赖关系 | 表达子任务和修复路径 |
+| GraphDelta | 动态加载的代码片段 | 以受限方式增加任务节点 |
+| TaskTreeKernel | 解释器 / 虚拟机 | 推进生命周期，解释节点语义 |
+| ExecutionFrame | 调用栈帧 | 记录当前节点处于哪个阶段 |
+| WorldSnapshot | 外部环境 / 堆状态 | 机器人面对的现实快照 |
+| Artifact | 类型化中间值 / 编译产物 | 路径、抓取计划、绑定结果 |
+| ActionRequest | 系统调用 | 请求运行时代为执行物理动作 |
+| HarnessRuntime | 内核 / 设备驱动 | 唯一受控硬件入口 |
+| Observation | 系统调用返回值 | 动作后的现实证据 |
+| Verifier | 断言 / 后置条件检查器 | 只依据快照判断 |
+| Diagnostic | 异常对象 | 结构化失败原因 |
+| RepairProposal | 异常处理分支 | 生成一棵可验证的修复子树 |
+| 事件日志 | trace / execution log | 记录程序如何运行 |
+
+这个类比不是说机器人系统真的运行字节码，而是帮助理解职责：
+
+语言模型负责把“想做什么”说清楚；内核负责按规则解释任务；能力模块负责计算；设备运行时负责副作用；观察结果负责把现实带回程序。
+
+5.2 为什么不是一次性编译完整程序
+
+当前核心编译器只编译根节点：
+
+TaskProgram
+    -> root: Place
+
+当 Place 节点进入运行时，才由分解器返回子节点：
+
+Place
+    -> ResolveAndInspect
+    -> PlanPick
+    -> PlanTransfer
+    -> Pick
+    -> TransferHeld
+    -> Release
+    -> VerifyPlaceGoal
+
+这样做有几个原因。
+
+原因一：任务分解依赖真实世界
+
+如果一开始就把完整任务树固定下来，系统可能基于过期或尚未确认的对象信息生成很多无效步骤。
+
+原因二：修复路径无法提前完全知道
+
+路线是否被阻挡、哪个对象是可移动障碍物、哪个停车区域可用，通常只有在运行时结合当前快照才能确定。
+
+原因三：避免过度承诺
+
+系统可以先承诺高层目标，再根据现实逐步展开细节。这和一次性生成一份很长但未经验证的脚本不同。
+
+原因四：让每次展开都有边界
+
+分解器只能返回类型化的 GraphDelta。它不是把一段任意代码注入解释器，而是申请增加一组受约束的节点和边。
+
+5.3 “编译”与“解释”的分工
+
+编译阶段：
+    检查输入格式
+    检查选择器
+    创建根节点
+    建立初始任务定义
+
+解释阶段：
+    检查目标
+    检查前置条件
+    展开子树
+    执行系统操作或物理动作
+    验证后置条件
+    处理失败和修复
+
+所以这套系统不是“LLM 生成后就结束”，而是：
+
+LLM 产出程序入口，内核运行这个程序，现实世界不断返回新的输入。
+
+----------------------------------------------------------------
+6. 意图层：自然语言如何变成 TaskProgram
+
+6.1 一个自然语言任务
+
+把红色杯子放到收纳区。
+
+在系统里，最小的结构化表达可以近似写成：
+
+{
+  "program_id": "task-0001",
+  "action": "place",
+  "arguments": {
+    "object_selector": {
+      "entity_kind": "object",
+      "relation": "first",
+      "required_tags": ["red", "cup"],
+      "reference": "robot",
+      "frame": "world",
+      "metric": "euclidean",
+      "cardinality": "one",
+      "tie_policy": "stable_id"
+    },
+    "destination_selector": {
+      "entity_kind": "region",
+      "relation": "first",
+      "required_tags": ["storage"],
+      "reference": "robot",
+      "frame": "world",
+      "metric": "euclidean",
+      "cardinality": "one",
+      "tie_policy": "stable_id"
+    }
+  }
+}
+
+当前核心参考实现中的 TaskProgram 主要支持 place 动作，并要求对象和目的地使用 SpatialSelector 表达。GeminiER2 适配层还会对外部 Harness 程序做规范化、翻译和兼容处理。
+
+6.2 为什么不能只传两个字符串
+
+简单写成：
+
+{
+  "object": "红色杯子",
+  "destination": "收纳区"
+}
+
+会丢失很多重要信息：
+
+- “红色杯子”是精确 ID 还是语义查询？
+- 有多个候选时如何排序？
+- “左边”“最近”相对于机器人还是相对于另一个物体？
+- 选择结果是一件还是多件？
+- 平局时是否稳定？
+- 选择使用哪个坐标系？
+- 这个选择是否能被复现？
+
+SpatialSelector 把这些信息显式化。当前参考实现支持的关键字段包括：
+
+| 字段 | 含义 |
+| --- | --- |
+| entity_kind | object、region 等实体类别 |
+| relation | exact、first、nearest、leftmost、rightmost、farthest、corner |
+| entity_id | 精确选择时使用的实体 ID |
+| required_tags | 必须具有的语义标签 |
+| region_id | 限定在某个区域内选择 |
+| reference | 参考对象，默认可为机器人 |
+| reference_entity_id | 以某个实体作为参考 |
+| frame | 选择所在坐标系 |
+| metric | 距离度量 |
+| cardinality | 选择一个还是多个 |
+| tie_policy | 平局时如何稳定决策 |
+| corner | 选择区域角点时的角点名称 |
+
+当前核心参考实现收紧了几个边界：
+
+- cardinality 必须是 one；
+- tie_policy 使用 stable_id；
+- metric 使用 euclidean。
+
+这些限制牺牲了一些灵活性，换来的是可预测性和容易测试。
+
+6.3 LLM 在这里做什么
+
+LLM 适合完成：
+
+理解“红色杯子”
+理解“收纳区”
+理解“保持直立”
+把隐含意图转换成选择器和约束
+发现用户没有说清楚的地方
+请求澄清
+
+LLM 不应该完成：
+
+直接给出机械臂关节电压
+直接改写运行时节点状态
+直接声称“已经放好”
+把不可行的路径伪装成可行路径
+
+这就是“模型做意图编译器，而不是做物理执行器”的边界。
+
+----------------------------------------------------------------
+7. 任务程序层：任务树为什么像运行时代码
+
+7.1 TaskNodeSpec：静态程序定义
+
+一个节点的静态定义近似如下：
+
+TaskNodeSpec(
+    node_id="program/task-0001",
+    task_type="Place",
+    operation_kind=OperationKind.DECOMPOSER,
+    control_kind=ControlKind.SEQUENCE,
+    origin=NodeOrigin.PROGRAM,
+    parameters={
+        "scope": "task-0001",
+        "object_selector": ...,
+        "destination_selector": ...,
+        "repair_depth": 0,
+    },
+    preconditions=(),
+    postconditions=(),
+    max_attempts=1,
+    max_repairs=0,
+    execution_policy=ExecutionPolicy.SKIP_IF_GOAL_SATISFIED,
+)
+
+它回答的是：
+
+这个节点是什么？
+它属于哪一类操作？
+它有哪些参数？
+它成功前需要什么？
+它成功后要满足什么？
+它最多尝试几次？
+它能否被修复？
+
+7.2 TaskNodeRuntime：本次调用的运行状态
+
+同一个节点在运行时还会有另一份状态：
+
+TaskNodeRuntime(
+    status=NodeStatus.RUNNING,
+    phase="execute",
+    attempts=1,
+    repairs=0,
+    expanded=True,
+    output_artifacts=("transfer-plan-...",),
+    last_diagnostic=None,
+    started_at=...,
+    finished_at=None,
+    adapter_state={
+        "active_request_id": "...",
+    },
+    active_obligations=(),
+)
+
+它回答的是：
+
+这次执行到哪了？
+已经试了几次？
+是否展开过？
+产出了哪些工件？
+最近一次为什么失败？
+有没有活跃的物理请求？
+
+7.3 为什么必须分离 Spec 和 Runtime
+
+如果把定义和运行状态混在一起，会产生几个问题：
+
+1. 同一个任务定义无法复用  
+   静态任务类型和本次执行进度被绑死。
+2. 重试会覆盖历史  
+   你看不到第一次尝试和第二次尝试的差别。
+3. 审计困难  
+   不容易判断“原计划是什么”和“运行后变成了什么”。
+4. 并发或多会话更难处理  
+   每次调用需要独立的运行态。
+5. 恢复困难  
+   重新加载时需要知道节点定义和节点进度分别是什么。
+
+分离后可以把它理解为：
+
+TaskNodeSpec    = 程序的定义
+TaskNodeRuntime = 这次调用的实例状态
+
+7.4 TaskEdge：控制流不是藏在代码里
+
+当前边有两种：
+
+child   普通子任务关系
+repair  由失败触发的修复子任务关系
+
+普通任务：
+
+Place
+  └── child -> PlanPick
+
+修复任务：
+
+PlanTransfer
+  └── repair -> RouteBlockedRepair
+
+把 repair 单独建成边，而不是把它藏在某个函数内部，有三个好处：
+
+- 能看出原任务和修复任务的关系；
+- 能统计任务真正经历了多少次修复；
+- 能在回放时区分正常流程和异常流程。
+
+7.5 GraphDelta：受约束的运行时增量代码
+
+分解器和修复器不能直接写 Store，只能返回：
+
+GraphDelta(
+    nodes=(AddNode(...), ...),
+    edges=(AddEdge(...), ...),
+    root_id=None,
+)
+
+它类似“向运行时申请加载一段代码”，但内核会先检查：
+
+- 节点是否属于允许的子树；
+- 边是否指向已声明或合法存在的节点；
+- repair 是否只有一条挂载边；
+- 是否产生环；
+- 所有节点是否可达；
+- 是否越过当前任务边界；
+- 是否试图替换根节点。
+
+这意味着动态任务树不是任意自修改程序，而是：
+
+被图结构不变量约束的有限运行时扩展。
+
+7.6 ExecutionFrame：任务树的调用栈
+
+内核维护持久化执行栈。每个栈帧记录：
+
+ExecutionFrame(
+    node_id="...",
+    phase=FramePhase.EXECUTE,
+    next_child_index=0,
+    active_child_id=None,
+    original_diagnostic=None,
+    last_child_diagnostic=None,
+)
+
+当前阶段包括：
+
+ENTER
+GOAL_CHECK
+PRECONDITIONS
+EXECUTE
+VERIFY
+CHILDREN
+REPAIR
+RECONCILIATION
+
+这和函数调用栈的关系很像：
+
+根节点调用子节点
+子节点未完成时暂停父节点
+子节点成功后返回父节点
+子节点失败时把诊断带回父节点
+父节点决定重试、修复或失败
+
+7.7 事件日志：运行过程不是黑盒
+
+Store 还保存追加式事件日志。事件把以下对象串起来：
+
+节点
+运行状态
+执行阶段
+工件引用
+物理请求
+事务
+世界快照引用
+诊断
+修复挂载
+
+因此，在任务结束后，可以追问：
+
+为什么执行了这个动作？
+这个动作使用的是哪个计划？
+这个计划基于哪个世界版本？
+动作之后看到了什么？
+为什么认为动作成功？
+为什么触发修复？
+修复之后重算了哪些计划？
+
+----------------------------------------------------------------
+8. 世界模型：运行时面对的“外部内存”
+
+8.1 WorldSnapshot 不是任务树
+
+任务树记录：
+
+我要做什么
+做到哪一步
+哪一步失败
+
+世界快照记录：
+
+现实中现在有什么
+每个实体在哪里
+机器人当前姿态是什么
+地图和坐标系版本是什么
+
+两者必须分开：
+
+TaskTreeStore  = 程序执行状态
+WorldModel     = 现实观察状态
+ArtifactStore  = 基于现实计算出的中间结果
+
+如果把三者混成一个 JSON，系统会无法清楚区分：
+
+- “任务想把杯子放到那里”；
+- “杯子实际上已经在那里”；
+- “规划器曾经认为杯子可以到那里”。
+
+8.2 当前核心模型的结构
+
+WorldSnapshot
+├── revision
+├── frame_graph_revision
+├── grid
+│   ├── width
+│   ├── height
+│   ├── resolution
+│   ├── origin_x / origin_y
+│   ├── static_occupied
+│   └── revision
+├── robot: RobotState
+└── entities: EntityState[]
+
+8.3 EntityState：物体、区域、障碍物都用实体表示
+
+EntityState(
+    entity_id="cup-red",
+    kind="object",
+    pose=Pose(...),
+    radius=0.12,
+    tags=frozenset({"red", "cup"}),
+    properties={
+        "movable": True,
+        "nav_obstacle": False,
+        "arm_obstacle": False,
+    },
+    version=3,
+)
+
+字段含义：
+
+| 字段 | 含义 |
+| --- | --- |
+| entity_id | 稳定实体标识 |
+| kind | 实体类别，例如 object、region |
+| pose | 位置、朝向和坐标系 |
+| radius | 参考几何尺寸 |
+| tags | 语义标签，用于选择和分类 |
+| properties | 领域属性，如是否可移动、是否是导航障碍 |
+| version | 这个实体自身发生变化的版本 |
+
+properties 的重要性在于：实体的“物理存在”和“任务语义”可以同时表达。
+
+例如同一个实体可以是：
+
+{
+  "entity_id": "movable-crate",
+  "kind": "object",
+  "radius": 0.25,
+  "tags": ["crate"],
+  "properties": {
+    "movable": true,
+    "nav_obstacle": true,
+    "arm_obstacle": true
+  }
+}
+
+它同时具有：
+
+- 是一个物体；
+- 可以被移动；
+- 会挡住底盘路线；
+- 也可能挡住机械臂。
+
+8.4 RobotState：机器人不是一个黑盒位置
+
+RobotState(
+    base_pose=Pose(...),
+    joints=(0.2, -0.6),
+    gripper_open=True,
+    held_object_id=None,
+    state_epoch=14,
+)
+
+字段含义：
+
+| 字段 | 含义 |
+| --- | --- |
+| base_pose | 移动底盘在世界中的位置和朝向 |
+| joints | 当前机械臂关节配置 |
+| gripper_open | 夹爪是否打开 |
+| held_object_id | 当前夹持的实体 |
+| state_epoch | 机器人状态变化代数 |
+
+state_epoch 很重要。因为一个抓取计划依赖机器人当时的关节状态。如果机器人已经移动过，原来的接近路径可能不再适用。
+
+8.5 Observation：现实返回给系统的证据
+
+物理命令之后，后端返回：
+
+Observation(
+    robot=RobotState(...),
+    entities=(EntityState(...), ...),
+    frame_graph_revision=...,
+)
+
+Observation 本身不是最终的世界版本。它被 WorldModel.ingest() 接收后，才产生新的：
+
+world:0 -> world:1 -> world:2 -> ...
+
+当前参考实现中：
+
+- 每次 ingest 都推进 WorldSnapshot.revision；
+- 如果实体的姿态、尺寸、标签或属性发生变化，就增加该实体的 version；
+- 如果机器人姿态、关节、夹爪或持有物发生变化，就增加 state_epoch；
+- 坐标系变化通过 frame_graph_revision 表达。
+
+8.6 一个完整的世界快照示例
+
+{
+  "revision": 7,
+  "frame_graph_revision": 2,
+  "grid": {
+    "width": 20,
+    "height": 16,
+    "resolution": 0.1,
+    "origin_x": 0.0,
+    "origin_y": 0.0,
+    "static_occupied": [[0, 0], [0, 1]]
+  },
+  "robot": {
+    "base_pose": {
+      "x": 0.2,
+      "y": 0.3,
+      "z": 0.0,
+      "yaw": 0.0,
+      "frame": "world"
+    },
+    "joints": [0.2, -0.6],
+    "gripper_open": true,
+    "held_object_id": null,
+    "state_epoch": 14
+  },
+  "entities": {
+    "cup-red": {
+      "entity_id": "cup-red",
+      "kind": "object",
+      "pose": {
+        "x": 0.75,
+        "y": 0.40,
+        "z": 0.08,
+        "yaw": 0.0,
+        "frame": "world"
+      },
+      "radius": 0.12,
+      "tags": ["cup", "red"],
+      "properties": {
+        "movable": true,
+        "nav_obstacle": false,
+        "arm_obstacle": false
+      },
+      "version": 1
+    },
+    "drop-zone": {
+      "entity_id": "drop-zone",
+      "kind": "region",
+      "pose": {
+        "x": 1.25,
+        "y": 0.60,
+        "z": 0.0,
+        "yaw": 0.0,
+        "frame": "world"
+      },
+      "radius": 0.30,
+      "tags": ["storage"],
+      "properties": {
+        "bounds": [1.10, 0.45, 1.40, 0.75],
+        "acceptance_radius": 0.15,
+        "yaw_tolerance": 0.20
+      },
+      "version": 0
+    },
+    "movable-crate": {
+      "entity_id": "movable-crate",
+      "kind": "object",
+      "pose": {
+        "x": 0.90,
+        "y": 0.48,
+        "z": 0.10,
+        "yaw": 0.0,
+        "frame": "world"
+      },
+      "radius": 0.25,
+      "tags": ["crate"],
+      "properties": {
+        "movable": true,
+        "nav_obstacle": true,
+        "arm_obstacle": true
+      },
+      "version": 2
+    }
+  }
+}
+
+这里最重要的不是 JSON 长什么样，而是每个结论都必须能回答：
+
+它来自哪个快照？
+它依赖哪些实体版本？
+它有没有被之后的观察推翻？
+
+----------------------------------------------------------------
+9. 规划工件：把“计算结果”变成可追踪的数据产品
+
+9.1 为什么需要 Artifact
+
+如果规划器只在函数内部返回一个临时变量：
+
+path = planner.plan(...)
+
+那么外部很难知道：
+
+- 这条路径基于哪个世界状态；
+- 使用了哪个机器人模型；
+- 哪些障碍物被考虑了；
+- 是否忽略了当前被抓住的物体；
+- 机器人关节状态是否已经改变；
+- 这条路径是否仍然新鲜；
+- 哪个动作消费了它。
+
+因此规划结果被建模成不可变工件：
+
+BindingArtifact
+NavigationPlan
+PickPlan
+TransferPlan
+
+9.2 四类主要工件
+
+BindingArtifact
+
+记录语义选择最终绑定到了哪个实体：
+
+“红色杯子” -> cup-red
+“收纳区”   -> drop-zone
+
+同时保留候选集合和选择依据。
+
+NavigationPlan
+
+记录：
+
+- 起点；
+- 终点；
+- 路径点；
+- 路径代价；
+- 清障半径；
+- 被明确忽略的实体集合。
+
+PickPlan
+
+记录：
+
+- 要抓取的对象；
+- 使用的导航计划；
+- 底盘抓取站位；
+- 抓取姿态；
+- 机械臂接近路径；
+- 抓取关节配置。
+
+TransferPlan
+
+记录：
+
+- 要运输的对象；
+- 目标区域；
+- 运输导航计划；
+- 目标站位；
+- 放置姿态；
+- 运输姿态；
+- 到运输姿态的路径；
+- 放置路径；
+- 朝向容差。
+
+9.3 工件元数据为什么比路径本身更重要
+
+每个工件都带有类似下面的元数据：
+
+ArtifactMetadata(
+    snapshot_ref="world:7",
+    dependency_versions=(
+        ("arm", ...),
+        ("entity:cup-red", 1),
+        ("entity:drop-zone", 0),
+        ("map", 3),
+        ("frame_graph", 2),
+        ("nav_occupancy:", ...),
+    ),
+    frame_graph_revision=2,
+    robot_state_epoch=14,
+    robot_model_version="reference-arm-v1",
+    collision_model_version="reference-collision-v1",
+    payload_transform_hash="cup-red:0.120000",
+    assumptions=(...),
+    random_seed=0,
+)
+
+这使工件可以回答：
+
+我是在 world:7 上生成的
+我依赖杯子版本 1
+我依赖收纳区版本 0
+我依赖当前地图和障碍物指纹
+我假设机器人处于 state_epoch 14
+我使用 reference-arm-v1
+我使用 reference-collision-v1
+
+9.4 新鲜度：计划不是永远有效
+
+当前系统不会简单地把所有旧工件改成：
+
+invalidated = true
+
+而是根据工件声明的依赖版本和当前快照比较，推导它是否新鲜：
+
+工件记录：
+    entity:cup-red = 1
+    map = 3
+    robot = 14
+
+当前快照：
+    entity:cup-red = 2
+    map = 3
+    robot = 15
+
+结论：
+    工件过期
+
+这样做的好处：
+
+- 过期原因可解释；
+- 不需要让一个可变标志成为唯一事实；
+- 可以精确知道是哪一个依赖变了；
+- 可以决定只重算受影响的部分。
+
+9.5 工件依赖图
+
+BindingArtifact
+        │
+        ▼
+    PickPlan
+        │
+        ▼
+  TransferPlan
+        │
+        ▼
+ ActionRequest
+
+如果重新生成了 PickPlan，依赖它的 TransferPlan 也必须重新生成，不能只更新一半。
+
+工件存储采用：
+
+不可变 artifact：
+    永远保留，不原地修改
+
+可变 scoped alias：
+    “当前 pick_plan”指向最新版本
+
+这类似于：
+
+历史提交不可改
+分支指针可以移动
+
+9.6 算法为什么不是任务树节点
+
+以下算法属于能力内部实现：
+
+A*
+IK
+RRT
+MPC
+
+它们不应该变成任务树节点：
+
+错误示例：
+Place
+  └── AStarIteration_001
+      └── AStarIteration_002
+
+正确方式是：
+
+Place
+  └── PlanTransfer
+          └── 内部调用 A*
+          └── 产出 NavigationPlan
+
+任务树记录有业务意义的动作：
+
+规划转移
+执行抓取
+确认已持有
+
+而不是记录算法的每一轮内部计算。
+
+这样可以保证：
+
+- 换 A* 实现不改变任务语义；
+- 换成 RRT 或 MPC 不需要改变任务树；
+- 日志仍然围绕业务步骤，而不是充满数学迭代；
+- 规划失败可以归属于 PlanTransfer，而不是一堆内部循环。
+
+----------------------------------------------------------------
+10. 任务内核：真正的“运行时解释器”
+
+10.1 TaskTreeStore 是唯一权威状态
+
+当前架构最重要的所有权规则是：
+
+TaskTreeStore 拥有：
+    TaskNodeSpec
+    TaskNodeRuntime
+    TaskEdge
+    ExecutionFrame stack
+    append-only event log
+
+其他模块可以读取，但不能各自保存一份“差不多的运行时树”。
+
+10.2 TaskTreeKernel 是唯一写入者
+
+TaskTreeKernel 同时承担两种职责：
+
+1. 唯一的节点生命周期解释器；
+2. TaskTreeStore 的唯一写入者。
+
+这意味着：
+
+LLM            不能直接写 Store
+Decomposer     只能返回 GraphDelta
+RepairResolver 只能返回 RepairProposal
+Inspector      只能读
+Web Console    只能通过适配器读或提交任务
+
+为什么要这样做？
+
+如果多个模块都能改树：
+
+分解器添加了一个节点
+修复器同时删除了另一个节点
+Web 控制台又把状态改成 succeeded
+
+那么系统无法知道哪一个状态是真实权威。
+
+单写入者模型把状态变化集中到一个地方，便于：
+
+- 检查不变量；
+- 做原子更新；
+- 记录事件；
+- 重放执行；
+- 定位责任。
+
+10.3 节点生命周期
+
+一个典型节点大致按以下阶段推进：
+
+ENTER
+  ↓
+GOAL_CHECK
+  ↓
+PRECONDITIONS
+  ↓
+EXECUTE 或展开 CHILDREN
+  ↓
+VERIFY
+  ↓
+SUCCEEDED
+
+失败时可能进入：
+
+诊断
+  ├── 可重试：回到执行或目标检查
+  ├── 需要重新规划：挂载 repair 子树
+  ├── 物理结果不确定：进入 reconciliation
+  └── 无法恢复：FAILED / BLOCKED
+
+10.4 目标检查和前置条件不是一回事
+
+当前节点有两种重要策略：
+
+SKIP_IF_GOAL_SATISFIED
+REQUIRE_EXECUTION
+
+对某些幂等目标节点，如果进入时目标已经满足，可以直接成功：
+
+VerifyPlaceGoal
+    发现 object_at 已满足
+    -> 成功
+
+但结构节点或必须产生副作用的节点不能因为目标看起来满足就跳过整个结构流程。它们需要先展开或执行，再在后置阶段统一验证。
+
+否则可能出现这种错误：
+
+任务目标碰巧已经满足
+    -> 复合节点直接跳过
+    -> 任务树没有留下预期的结构和证据
+
+10.5 当前执行是串行的
+
+当前 ContinuousTaskSession 一次只接受一个正在运行的任务：
+
+任务 1 完成
+    ↓
+任务 2 才能提交
+
+这不是并行调度系统。即使未来要支持多任务并行，也需要额外设计：
+
+- 资源仲裁；
+- 物理互斥；
+- 多树之间的世界一致性；
+- 冲突检测；
+- 取消和抢占；
+- 多机器人协同。
+
+当前的清晰边界是：
+
+每个任务拥有独立的任务树
+所有任务共享连续的物理世界
+当前调度方式为串行
+
+----------------------------------------------------------------
+11. 物理边界：从“程序步骤”到真实副作用
+
+11.1 三种节点角色
+
+当前节点按操作职责区分：
+
+| operation_kind | 作用 | 是否直接触碰机器人 |
+| --- | --- | --- |
+| decomposer | 把高层任务展开成子任务 | 否 |
+| system | 读世界、做选择、规划、发布工件、验证 | 否 |
+| physical | 消费工件并构造物理动作请求 | 不能绕过 Runtime |
+
+物理技能不是机器人后端。它只负责把计划翻译成：
+
+ActionRequest(
+    request_id="...",
+    action_name="NavigateHeld",
+    commands=(...),
+    resources=frozenset({"base"}),
+    artifact_refs=("...", "..."),
+    preconditions=(...),
+)
+
+11.2 ActionRequest 是一次受限系统调用
+
+它包含：
+
+| 字段 | 含义 |
+| --- | --- |
+| request_id | 幂等标识，避免同一请求重复派发 |
+| action_name | 物理动作名称 |
+| commands | 导航、机械臂路径、夹爪等规范化命令 |
+| resources | 要占用的资源，如 base、arm、gripper |
+| artifact_refs | 消费了哪些计划工件 |
+| preconditions | 动作发送前需要满足的谓词 |
+
+关键点：
+
+PhysicalSkill 生成请求
+HarnessRuntime 审查并执行请求
+RobotBackend 执行具体命令
+
+这样技能不能偷偷绕过：
+
+- 工件新鲜度检查；
+- 快照谓词保护；
+- 资源租约；
+- 事务；
+- 取消机制；
+- 观察回收；
+- 结果对账。
+
+11.3 唯一物理入口
+
+物理路径是：
+
+ActionRequest
+    ↓
+HarnessRuntime
+    ├── 检查工件是否新鲜
+    ├── 检查当前快照中的前置条件
+    ├── 原子获取资源租约
+    ├── 创建 checkpoint
+    ├── 执行每条物理命令
+    ├── 每条命令后采集 Observation
+    ├── 提交、回滚或进入对账
+    └── 返回 PhysicalActionOutcome
+
+这条边界的设计动机是：
+
+所有会产生现实副作用的请求，必须经过同一组安全、版本、事务和观察规则。
+
+11.4 模拟器可以回滚，真实机器人通常不能
+
+参考模拟器可以把内存状态恢复到 checkpoint：
+
+checkpoint
+    ↓
+执行失败
+    ↓
+restore(checkpoint)
+
+真实机器人通常不能把已经发生的物理运动真正撤销。因此生产后端应当：
+
+supports_rollback = False
+动作失败或结果不明
+    ↓
+重新观察现实
+    ↓
+reconciliation
+    ↓
+基于观察结果继续或重新规划
+
+这体现了软件事务和物理事务的根本差别：
+
+软件事务可以恢复内存
+物理事务只能恢复“对现实的认识”
+
+----------------------------------------------------------------
+12. 观察和验证：系统如何知道自己没有自欺
+
+12.1 “命令成功”不等于“目标成功”
+
+至少要区分四件事：
+
+规划器认为路径存在
+命令已经发送
+后端报告动作完成
+传感器证据证明目标状态已经成立
+
+例如夹爪命令返回成功，只说明：
+
+夹爪控制接口接受并完成了闭合动作
+
+它不自动证明：
+
+杯子被夹住了
+杯子没有滑落
+杯子还在夹爪里
+
+因此系统在物理动作之后必须生成 Observation，再由验证器检查：
+
+object_held(cup-red)
+object_released(cup-red)
+object_at(cup-red, drop-zone)
+base_near(target_pose)
+joints_near(target_joints)
+
+12.2 Verifier 的纯函数性质
+
+核心验证器的设计约束是：
+
+Verifier.evaluate(formula, snapshot)
+
+它只读取：
+
+- 谓词公式；
+- 不可变 WorldSnapshot。
+
+它不调用：
+
+- 规划器；
+- 物理技能；
+- 控制器；
+- 后端；
+- 修复器。
+
+这样“判断事实”和“改变事实”被分开了。
+
+例如：
+
+Verifier.evaluate(
+    PredicateFormula(
+        "object_at",
+        {
+            "object_id": "cup-red",
+            "destination_id": "drop-zone",
+        },
+    ),
+    snapshot,
+)
+
+结果包含：
+
+satisfied: true / false
+evidence:
+    predicate
+    snapshot_ref
+    distance
+    tolerance
+    object_pose
+    destination_pose
+
+失败时不是返回一句“好像没放好”，而是返回带快照引用的证据。
+
+12.3 OUTCOME_UNKNOWN 是一个独立状态
+
+现实系统经常遇到：
+
+动作已经发出
+后端连接中断
+无法确定机器人到底完成到哪一步
+
+这不能简单等同于：
+
+动作肯定失败
+
+也不能等同于：
+
+动作肯定成功
+
+因此架构区分：
+
+FAILED
+OUTCOME_UNKNOWN
+RECONCILIATION
+
+系统需要先重新观察、对账，再决定是否允许继续提交动作。
+
+----------------------------------------------------------------
+13. 示例一：正常执行“把杯子放到收纳区”
+
+下面用完整流程把前面的对象串起来。
+
+13.1 初始世界
+
+world:0
+
+机器人：
+    base = (0.20, 0.30, 0.00)
+    joints = (0.20, -0.60)
+    gripper = open
+    holding = none
+
+对象：
+    cup-red    = (0.75, 0.40)
+    drop-zone  = (1.25, 0.60)
+
+约束：
+    cup-red movable = true
+    drop-zone acceptance_radius = 0.15
+
+13.2 自然语言转成程序
+
+用户：
+    把红色杯子放到收纳区。
+
+LLM / Planner Adapter：
+    object_selector = kind=object, tags={red,cup}
+    destination_selector = kind=region, tags={storage}
+
+TaskProgram：
+    action = place
+
+13.3 编译初始根节点
+
+编译器只创建根：
+
+program/task-0001 : Place
+
+此时还没有把完整的 16 个节点全部写入 Store。
+
+13.4 根节点展开
+
+运行时，Place 分解成：
+
+Place
+├── ResolveAndInspect
+├── PlanPick
+├── PlanTransfer
+├── Pick
+│   ├── NavigateToPickStance
+│   ├── ExecuteGrasp
+│   └── VerifyHeld
+├── TransferHeld
+│   ├── MoveToTransportPosture
+│   ├── NavigateHeld
+│   └── VerifyPlacementReady
+├── Release
+│   ├── ExecuteRelease
+│   └── VerifyReleased
+└── VerifyPlaceGoal
+
+节点总数为 16，普通 child 边为 15，修复边为 0。
+
+13.5 绑定阶段
+
+ResolveAndInspect 读取 world:0：
+
+object selector      -> cup-red
+destination selector -> drop-zone
+
+生成：
+
+BindingArtifact
+    object_id = cup-red
+    destination_id = drop-zone
+    source_snapshot = world:0
+    dependency:
+        entity:cup-red = 0
+        entity:drop-zone = 0
+
+13.6 规划抓取
+
+PlanPick 消费绑定工件，调用机械臂和底盘规划能力：
+
+输入：
+    cup-red 的位置
+    当前机器人关节
+    地图
+    碰撞模型
+
+输出：
+    PickPlan
+    NavigationPlan
+
+规划工件记录：
+
+生成快照 = world:0
+机器人 state_epoch = 0
+机器人模型 = reference-arm-v1
+碰撞模型 = reference-collision-v1
+
+13.7 预先规划运输
+
+PlanTransfer 在机器人还没有拿住杯子之前规划运输路线。
+
+这样做的动机是：
+
+先在空手状态发现路线不可行
+    比
+已经抓住杯子后才发现无法运输
+    更容易修复
+
+如果杯子会改变机器人通过空间，还要把杯子的载荷包络纳入路线检查。
+
+13.8 执行抓取
+
+NavigateToPickStance 生成：
+
+ActionRequest
+    action_name = NavigateToPickStance
+    resources = {base}
+    artifact_refs = {navigation_plan, pick_plan}
+
+运行时检查：
+
+工件是否新鲜？
+当前底盘是否满足前置条件？
+base 是否可租约？
+
+执行后得到 Observation，世界推进：
+
+world:0 -> world:1
+
+然后 ExecuteGrasp 生成：
+
+ArmPathCommand(...)
+GripperCommand(close=True, object_id="cup-red")
+
+执行后观察到：
+
+gripper_open = false
+held_object_id = cup-red
+
+世界可能推进到：
+
+world:2
+robot.state_epoch = 1
+
+VerifyHeld 读取新的世界快照，而不是相信技能返回的文字：
+
+object_held(cup-red) = true
+
+13.9 持物运输和释放
+
+接下来大致是：
+
+MoveToTransportPosture
+    -> 观察
+NavigateHeld
+    -> 观察
+VerifyPlacementReady
+    -> 观察并确认持有、底盘位置
+ExecuteRelease
+    -> 观察
+VerifyReleased
+    -> 确认 held_object_id != cup-red
+VerifyPlaceGoal
+    -> 确认 cup-red 在 drop-zone 容差内
+
+最终参考案例的统计为：
+
+status: succeeded
+节点数: 16
+child 边: 15
+repair 边: 0
+事件数: 127
+物理事务: 5
+world:0 -> world:7
+
+这些数字表达的不是“调用了 5 个 API”，而是：
+
+5 次物理事务
+每次事务后都有观察
+世界版本经历了 7 次推进
+任务树留下了完整的解释轨迹
+
+----------------------------------------------------------------
+14. 示例二：路线被箱子挡住时的递归修复
+
+这是最能体现“运行时代码”特征的例子。
+
+14.1 初始任务
+
+用户：
+    把红色杯子放到收纳区。
+
+世界中多了一个障碍物：
+
+movable-crate
+    movable = true
+    nav_obstacle = true
+    arm_obstacle = true
+
+14.2 规划失败
+
+PlanTransfer 运行时发现路线不可行，返回：
+
+{
+  "code": "ROUTE_BLOCKED",
+  "message": "Transfer route is blocked",
+  "details": {
+    "blocker_id": "movable-crate",
+    "source_snapshot": "world:0",
+    "retryable": true,
+    "repairable": true
+  }
+}
+
+此时任务不是马上终止，也不是让 A* 偷偷把箱子移开。
+
+14.3 反事实证明
+
+修复器先需要回答：
+
+如果暂时忽略 movable-crate，
+从当前起点到目标是否真的存在路线？
+
+只有当反事实 A* 证明：
+
+移除这个具体障碍物后路线恢复
+
+并且同时满足：
+
+障碍物确实存在
+障碍物是 movable
+存在合法停车区域
+修复深度没有超限
+当前夹爪没有占用一个不能放弃的载荷
+
+才允许提出移动障碍物的修复。
+
+14.4 修复提案不是直接执行
+
+修复器返回：
+
+RepairProposal(
+    delta=GraphDelta(...),
+    entry_node_id=".../repair-0/route-blocked",
+    rationale=(
+        "Relocate verified blocker movable-crate "
+        "to parking region parking-zone"
+    ),
+    invalidates_artifacts=(),
+)
+
+其 GraphDelta 申请新增：
+
+RouteBlockedRepair
+    parent = 原失败的 PlanTransfer
+    edge kind = repair
+
+内核负责验证并挂载，修复器不能自行改树。
+
+14.5 修复树
+
+挂载后可以看到：
+
+Place(cup-red -> drop-zone)
+├── ResolveAndInspect
+├── PlanPick
+├── PlanTransfer
+│   └── repair -> RouteBlockedRepair
+│       └── Place(movable-crate -> parking-zone)
+│           ├── ResolveAndInspect
+│           ├── PlanPick
+│           ├── PlanTransfer
+│           ├── Pick
+│           │   ├── NavigateToPickStance
+│           │   ├── ExecuteGrasp
+│           │   └── VerifyHeld
+│           ├── TransferHeld
+│           │   ├── MoveToTransportPosture
+│           │   ├── NavigateHeld
+│           │   └── VerifyPlacementReady
+│           ├── Release
+│           │   ├── ExecuteRelease
+│           │   └── VerifyReleased
+│           └── VerifyPlaceGoal
+├── Retry PlanTransfer
+├── Pick(cup-red)
+├── TransferHeld(cup-red)
+├── Release(cup-red)
+└── VerifyPlaceGoal
+
+这里不是简单地把失败节点改成成功，而是：
+
+原任务保留
+失败原因保留
+修复动作显式出现
+修复成功后重新规划
+原目标继续执行
+
+14.6 为什么移动障碍物必须成为任务节点
+
+错误做法：
+
+A* 发现箱子挡路
+    -> 在规划器内部修改地图
+    -> 假设箱子已经不在原处
+    -> 输出一条新路线
+
+这会产生一个隐藏副作用：
+
+计划认为箱子被移走
+现实中箱子仍然在原地
+任务树没有记录谁移动了箱子
+
+正确做法：
+
+移动障碍物是一个真实动作
+    -> 必须有任务节点
+    -> 必须生成动作请求
+    -> 必须有观察结果
+    -> 必须更新 WorldSnapshot
+    -> 必须重新规划依赖工件
+
+这就是“物理副作用显式化”原则。
+
+14.7 修复完成后的重新规划
+
+障碍物被放到停车区后：
+
+world:0 -> ... -> world:7
+
+原来的路线工件不能直接继续使用，因为：
+
+障碍物位置变了
+地图占用指纹变了
+原计划依赖的世界版本已经过期
+
+系统需要：
+
+重新检查 BindingArtifact
+刷新 PickPlan（必要时）
+刷新 TransferPlan
+重新验证路线
+重试原来的目标节点
+
+最终参考案例统计为：
+
+status: succeeded
+节点数: 34
+总边数: 33
+repair 边: 1
+事件数: 275
+物理事务: 10
+world:0 -> world:14
+
+这说明系统完成的不是：
+
+失败 -> 假装成功
+
+而是：
+
+失败
+-> 诊断
+-> 证明修复条件
+-> 挂载修复程序
+-> 执行修复
+-> 获取新观察
+-> 重新计算
+-> 重试原程序
+-> 验证最终目标
+
+14.8 修复任务也可能失败
+
+例如停车区域也被挡住：
+
+Place(movable-crate -> parking-zone)
+    -> PlanTransfer
+        -> ROUTE_BLOCKED
+
+系统理论上可以继续递归修复，但必须有边界：
+
+- 修复深度限制；
+- 节点尝试次数限制；
+- 最大对账次数；
+- 资源占用限制；
+- 不能抓取当前已经持有的对象以外的障碍物；
+- 没有合法停车区时必须停止；
+- 无法收敛时进入 BLOCKED 或人工介入。
+
+递归不是无限自我调用，而是：
+
+在明确的资源、深度和证据约束内，让修复任务复用同一套任务语义。
+
+----------------------------------------------------------------
+15. 示例三：连续任务中的“树隔离，世界连续”
+
+假设连续执行两条指令：
+
+任务 0001：把箱子放到停车区
+任务 0002：把红杯子放到收纳区
+
+任务 0001：
+
+TaskTreeStore-0001
+TaskTreeKernel-0001
+root = Place(movable-crate, parking-zone)
+world:0 -> world:7
+
+任务 0002：
+
+TaskTreeStore-0002
+TaskTreeKernel-0002
+root = Place(cup-red, drop-zone)
+world:7 -> world:14
+
+两棵树不混在一起，但第二棵树可以看到第一棵树造成的现实变化：
+
+任务树隔离：
+    防止两个根目标的运行态、事件、修复边混淆
+
+物理世界连续：
+    第二个任务读取最新 WorldSnapshot
+    不会把场景错误地重置回 world:0
+
+当前 ContinuousTaskSession 的特点：
+
+每个任务：
+    新建 Store
+    新建 Kernel
+    新建 Inspector
+    新建执行栈
+    新建任务事件轨迹
+
+跨任务共享：
+    WorldModel
+    HarnessRuntime
+    Artifact / transaction 基础设施
+    RobotBackend
+
+当前调度：
+    串行
+
+这类似于：
+
+每次命令都有自己的进程/调用上下文
+但进程访问的是同一个真实设备和同一个现场
+
+----------------------------------------------------------------
+16. 这套系统到底是哪一种“程序”
+
+为了避免概念混乱，可以把可能的说法逐一判断。
+
+| 说法 | 是否准确 | 解释 |
+| --- | --- | --- |
+| 自然语言直接变成电机代码 | 否 | 中间还有任务、规划、请求和运行时边界 |
+| LLM 生成 Python 控制脚本 | 否 | 当前 LLM 只提交受约束的程序意图 |
+| 自然语言是高层源语言 | 是 | 它表达目标、约束和偏好 |
+| TaskProgram 是中间表示 | 是 | 它把意图变成类型化结构 |
+| 任务树是可执行程序 | 基本是 | 它有控制流、状态、生命周期和后置条件 |
+| 任务树是通用编程语言 | 否 | 节点类型和能力范围是领域受限的 |
+| 任务树会自修改 | 受限地是 | 只能通过经过校验的 GraphDelta 增量扩展 |
+| 系统是反应式程序 | 是 | 每次动作后根据新观察决定下一步 |
+| 系统是完全自主的机器人操作系统 | 还不是 | 当前是参考架构和受限运行时，生产能力仍需补齐 |
+| 系统是传统工作流 | 不完全是 | 它还包含世界状态、连续观察、规划和物理修复 |
+
+最准确的命名可以是：
+
+受约束的自然语言任务编译器 + 机器人任务虚拟机 + 物理世界观察闭环。
+
+或者更简洁：
+
+自然语言驱动的机器人领域专用运行时。
+
+----------------------------------------------------------------
+17. 高层设计原则：每条原则解决什么问题
+
+17.1 单一所有权
+
+TaskTreeStore 是唯一权威树状态
+TaskTreeKernel 是唯一写入者
+
+解决的问题：
+
+- 多模块同时修改导致冲突；
+- 状态分叉；
+- 无法判断谁写入了错误状态；
+- 事件日志和真实状态不一致。
+
+代价：
+
+- 所有修改都要经过 Kernel；
+- 需要设计明确的 mutation API；
+- 某些看似简单的局部操作会多一层协议。
+
+17.2 最小权限
+
+不同角色拿到不同上下文：
+
+DecompositionContext
+    几乎没有服务能力
+
+SystemOperationContext
+    可以读世界、选择、规划、发布工件、验证
+
+SkillContext
+    只能读取工件和请求上下文
+
+RepairContext
+    可以读世界和工件，但不能改树
+
+解决的问题：
+
+- 让“不能做什么”由接口保证；
+- 降低误用和越权；
+- 让代码审查变得可操作；
+- 避免一个模块逐渐变成“万能对象”。
+
+17.3 计划与动作分离
+
+Planner -> Artifact
+Skill   -> ActionRequest
+Runtime -> physical execution
+
+解决的问题：
+
+- 规划失败和动作失败混淆；
+- 同一个计划被多个动作隐式消费；
+- 计划过期时无法拦截；
+- 物理动作绕过安全门禁。
+
+17.4 观察优先于声明
+
+动作返回成功 != 目标已经成立
+
+解决的问题：
+
+- 把 API 返回值误当成现实事实；
+- 夹持丢失却继续运输；
+- 物体没有到位却标记任务完成；
+- 连接中断后错误重试。
+
+17.5 不可变证据
+
+WorldSnapshot 不可变
+Artifact 不可变
+事件追加而不是覆盖
+
+解决的问题：
+
+- 历史状态被悄悄修改；
+- 无法回放；
+- 无法比较新旧计划；
+- 无法解释一次决策依赖的输入。
+
+17.6 物理副作用必须显式进入任务树
+
+移动障碍物
+拿起物体
+放下物体
+恢复姿态
+
+都必须成为可观察的任务步骤。
+
+解决的问题：
+
+- 规划器隐藏真实动作；
+- 任务树与现实脱节；
+- 恢复时不知道现场已经被改变；
+- 审计记录缺少关键副作用。
+
+17.7 算法是能力，不是业务步骤
+
+A*、IK、RRT、MPC
+
+留在能力内部。
+
+解决的问题：
+
+- 任务树被实现细节污染；
+- 更换算法需要重写任务语义；
+- 日志失去业务可读性；
+- 算法迭代被误认为物理动作。
+
+17.8 失败是数据，修复是程序
+
+Diagnostic
+    -> RepairProposal
+    -> GraphDelta
+    -> repair subtree
+
+解决的问题：
+
+- 所有失败都只能返回字符串；
+- 恢复逻辑散落在异常处理代码里；
+- 失败后只能从头重跑；
+- 无法区分可修复和不可修复。
+
+17.9 任务树和物理世界分离
+
+一棵树 = 一个目标的执行历史
+一个世界 = 连续的现实现场
+
+解决的问题：
+
+- 多条指令的任务状态混淆；
+- 新任务错误重置场景；
+- 第二条指令无法看到第一条指令造成的物理变化。
+
+----------------------------------------------------------------
+18. 安全与正确性分析
+
+18.1 威胁一：LLM 生成错误意图
+
+可能出现：
+
+把区域当成物体
+把两个实体绑定成同一个对象
+生成未知量词
+忽略用户约束
+引用不存在的实体
+
+应对机制：
+
+- TaskProgram 类型校验；
+- SpatialSelector 字段校验；
+- 候选集合和稳定平局策略；
+- 编译器规范化；
+- 对歧义、未知字段和冲突值 fail closed。
+
+18.2 威胁二：计划过期
+
+可能出现：
+
+规划时箱子在 A
+执行时箱子已经移动到 B
+
+应对机制：
+
+- 快照引用；
+- 实体版本；
+- 地图版本；
+- 障碍物占用指纹；
+- 机器人状态代数；
+- 机器人模型和碰撞模型版本；
+- 执行前 freshness 检查；
+- 过期后重新规划。
+
+18.3 威胁三：重复发送物理动作
+
+可能出现：
+
+网络超时
+上层以为没有发送成功
+再次发送同一个抓取请求
+
+应对机制：
+
+- 稳定 request_id；
+- Gateway 对同一请求只派发一次；
+- 后续调用等待第一次结果；
+- 物理结果不明时先进入 reconciliation。
+
+18.4 威胁四：隐藏物理副作用
+
+可能出现：
+
+规划器为了找到路线，直接修改障碍物集合
+
+应对机制：
+
+- 规划器只能发布工件；
+- 移动障碍物必须有任务节点；
+- 物理动作只能通过 HarnessRuntime；
+- 每个动作后都必须观察；
+- 世界变化由 WorldModel 接收。
+
+18.5 威胁五：错误的完成判断
+
+可能出现：
+
+夹爪闭合 -> 系统直接认为抓取成功
+后端返回 done -> 系统直接认为物体已到位
+
+应对机制：
+
+- VerifyHeld；
+- VerifyReleased；
+- VerifyPlaceGoal；
+- 基于不可变快照的证据；
+- OUTCOME_UNKNOWN 与 FAILED 分离。
+
+18.6 威胁六：修复无限循环
+
+可能出现：
+
+路线阻塞
+    -> 移障
+    -> 移障任务又阻塞
+    -> 再移另一个障碍
+    -> 无限递归
+
+应对机制：
+
+- max_repairs；
+- repair_depth；
+- max_node_attempts；
+- max_reconciliations；
+- 资源和持物状态检查；
+- 无法收敛时 BLOCKED 或人工介入。
+
+18.7 为什么安全不能只写进提示词
+
+提示词可以告诉模型：
+
+不要做危险动作
+
+但它不能可靠地成为：
+
+- 唯一权限系统；
+- 事务边界；
+- 版本检查器；
+- 物理设备网关；
+- 事实验证器。
+
+真正的安全约束必须落在代码边界：
+
+谁能写 Store
+谁能拿 Backend
+谁能发布 Artifact
+谁能生成 ActionRequest
+谁能验证现实
+谁能挂载 repair
+
+----------------------------------------------------------------
+19. 当前架构的边界：哪些地方不能过度解读
+
+19.1 当前核心 Store 是内存实现
+
+当前 TaskTreeStore 的权威状态在进程内存中。JSON 导出适合：
+
+- 检查；
+- 调试；
+- 回放输入；
+- 生成报告。
+
+但它还不是完整的崩溃恢复协议。生产实现需要在同一持久化事务边界中保存：
+
+树定义
+运行态
+边
+执行栈
+事件
+别名
+工件
+事务记录
+
+19.2 当前机器人是参考模拟器
+
+核心参考机器人是平面双连杆模型，并不等于真实工业机械臂的完整动力学和碰撞模型。
+
+生产接入仍需补齐：
+
+- 完整的末端执行器和载荷变换；
+- 真实关节限制；
+- 真实碰撞几何；
+- 控制周期内的连续碰撞监测；
+- 接触策略；
+- 传感器误差模型；
+- 安全停机和急停流程。
+
+19.3 当前 Web 控制台是本地单操作员适配器
+
+当前控制台主要用于本地操作和观察，没有完整认证体系。不能把它直接当作生产多用户控制面。
+
+19.4 当前调度是串行
+
+这套架构目前展示的是：
+
+一个任务树 + 一个连续物理世界 + 串行任务会话
+
+它还没有解决多任务并行和多机器人资源调度的全部问题。
+
+19.5 自然语言理解仍可能含糊
+
+类型化 TaskProgram 能约束结构，但不能自动消除所有语义歧义。
+
+例如：
+
+把杯子放到那里
+
+如果“杯子”有多个候选，系统仍然需要：
+
+- 请求澄清；
+- 使用明确的选择策略；
+- 或把候选集合交给人确认。
+
+这属于意图层问题，不是任务内核单独能够解决的问题。
+
+----------------------------------------------------------------
+20. 一个更形式化的理解
+
+可以把整个运行时状态抽象成：
+
+S_t = (T_t, W_t, A_t, X_t, E_t)
+
+其中：
+
+| 符号 | 含义 |
+| --- | --- |
+| T_t | 当前任务树，包括 Spec、Runtime 和 Edge |
+| W_t | 当前世界快照 |
+| A_t | 当前可用的不可变工件及别名 |
+| X_t | 当前执行栈 |
+| E_t | 追加式事件日志 |
+
+一个内核 tick 可以写成：
+
+(T_t, W_t, A_t, X_t, E_t)
+    --tick-->
+(T_{t+1}, W_t, A_{t+1}, X_{t+1}, E_{t+1})
+
+如果 tick 产生物理动作：
+
+ActionRequest_t + W_t
+    -> RobotBackend
+    -> Observation_{t+1}
+    -> W_{t+1}
+
+如果发生失败：
+
+Diagnostic_t + W_t
+    -> RepairProposal / Reconciliation
+    -> GraphDelta
+    -> T_{t+1}
+
+自然语言到程序的过程可以写成：
+
+NL
+    --interpret / normalize-->
+TaskProgram
+    --compile-->
+TaskNodeSpec root
+    --runtime expand-->
+TaskGraph
+    --interpret with W_t-->
+ActionRequest sequence
+
+这套系统的关键不是某个单独函数，而是让这些状态转换显式存在，并且每次转换都能被检查。
+
+----------------------------------------------------------------
+21. 如何阅读一次实际运行记录
+
+学习或调试一次任务时，可以按下面顺序看。
+
+第一步：看输入程序
+
+先看：
+
+TaskProgram.action
+TaskProgram.arguments
+object_selector
+destination_selector
+
+问自己：
+
+用户想做什么？
+对象如何被选择？
+目标如何被选择？
+有没有歧义？
+
+第二步：看根节点和静态定义
+
+看 TaskNodeSpec：
+
+task_type
+operation_kind
+control_kind
+origin
+parameters
+max_attempts
+max_repairs
+execution_policy
+
+问：
+
+这个节点是分解器、系统操作还是物理动作？
+它是叶子还是复合节点？
+它的目标和前置条件是什么？
+
+第三步：看运行态
+
+看 TaskNodeRuntime：
+
+status
+phase
+attempts
+repairs
+expanded
+output_artifacts
+last_diagnostic
+adapter_state
+
+问：
+
+它现在卡在哪个阶段？
+是没有开始，还是已经发出请求？
+失败之前尝试了几次？
+
+第四步：看执行栈
+
+栈顶通常是当前最具体的活动节点。
+
+例如：
+
+Place / CHILDREN
+TransferHeld / CHILDREN
+NavigateHeld / EXECUTE
+
+可以理解成：
+
+当前正在 Place 里面的 TransferHeld 里面执行 NavigateHeld
+
+第五步：看工件
+
+检查动作使用的工件：
+
+artifact_id
+kind
+snapshot_ref
+dependency_versions
+robot_state_epoch
+model versions
+payload_transform_hash
+
+问：
+
+它基于哪个世界？
+为什么现在仍然有效？
+哪个依赖变化会让它过期？
+
+第六步：看物理请求和观察
+
+把下面两件事对照起来：
+
+ActionRequest：
+    系统想让机器人做什么
+
+Observation：
+    机器人做完后现实变成什么
+
+不要只看请求，不看观察。
+
+第七步：看验证证据
+
+看：
+
+Verifier formula
+snapshot_ref
+measured value
+tolerance
+
+问：
+
+成功是由什么证据证明的？
+如果没有证据，是否应该是 OUTCOME_UNKNOWN？
+
+第八步：看诊断和修复边
+
+如果失败，检查：
+
+Diagnostic.code
+Diagnostic.details
+retryable
+repairable
+repair edge
+repair subtree
+
+这样才能看出系统是：
+
+单纯重试
+重新规划
+执行物理修复
+进入对账
+还是最终阻塞
+
+----------------------------------------------------------------
+22. 对这套架构的总体评价
+
+22.1 它解决了什么核心问题
+
+它把传统 Agent 中容易隐含的几件事拆开了：
+
+意图理解
+任务分解
+现实建模
+规划
+物理执行
+观察
+验证
+失败处理
+
+并且为每件事规定了边界。
+
+最有价值的转变是：
+
+从“模型不断调用工具”
+变成
+“模型提交任务程序，运行时推进任务程序”
+
+22.2 它带来的能力
+
+可解释
+
+可以从树、边、事件、工件和快照解释每一步。
+
+可恢复
+
+失败可以进入明确的 retry、repair 或 reconciliation。
+
+可测试
+
+可以测试：
+
+- GraphDelta 是否越界；
+- 图是否有环；
+- 工件是否过期；
+- 物理请求是否满足前置条件；
+- 观察后是否正确推进世界版本；
+- 修复树是否正确挂载。
+
+可替换
+
+可以在不改变任务语义的情况下替换：
+
+- A*；
+- IK；
+- RRT；
+- MPC；
+- 机器人后端；
+- Harness 适配器。
+
+可观测
+
+任务树和物理世界分别可视化，连续任务也可以保留独立历史。
+
+22.3 它付出的代价
+
+这种架构不是没有代价：
+
+- 类型和契约更多；
+- 组件间接口更严格；
+- 物理动作前后的检查增加延迟；
+- 任务树和事件日志会产生存储开销；
+- 生产持久化和恢复实现更复杂；
+- 多任务并行需要额外调度系统；
+- 现实世界不确定性仍然无法被完全消除。
+
+但这些代价换来的不是“代码更漂亮”，而是：
+
+错误可以被定位
+失败可以被解释
+动作可以被拦截
+计划可以被判定为过期
+现实可以重新对账
+
+对于会产生真实物理副作用的系统，这是更重要的价值。
+
+----------------------------------------------------------------
+23. 仍然值得继续思考的方向
+
+23.1 从结构化程序到更完整的任务语言
+
+未来可以扩展：
+
+- 多对象任务；
+- for_each；
+- 条件分支；
+- 并行分支；
+- 超时；
+- 人工确认；
+- 资源预算；
+- 风险等级；
+- 时间约束；
+- 任务取消和抢占。
+
+但扩展时仍应保持：
+
+自然语言 -> 类型化 IR -> 内核解释
+
+而不是重新回到任意代码生成。
+
+23.2 把世界不确定性正式建模
+
+当前核心参考模型主要是确定性的实体状态。生产系统还需要考虑：
+
+- 感知置信度；
+- 多假设实体绑定；
+- 物体可能被遮挡；
+- 位置估计误差；
+- 接触状态不确定；
+- 传感器延迟；
+- 观察之间的时间窗口。
+
+未来可以把：
+
+WorldSnapshot
+
+扩展成带不确定性和证据来源的世界信念状态，但必须避免让概率字段替代真实验证。
+
+23.3 让持久化真正成为恢复协议
+
+生产版需要保证：
+
+树状态
+执行栈
+事件
+工件
+别名
+物理事务
+
+在一致的存储边界中落盘，并考虑：
+
+- 进程崩溃；
+- 网络重连；
+- 后端重启；
+- 请求重复提交；
+- 观察延迟到达；
+- 旧版本事件回放。
+
+23.4 评估指标不能只看成功率
+
+更完整的指标包括：
+
+最终目标成功率
+有证据的成功率
+修复收敛率
+人工介入率
+过期计划拦截率
+重复物理请求率
+OUTCOME_UNKNOWN 占比
+平均修复深度
+平均重新规划范围
+事件回放完整率
+安全策略拦截次数
+
+一个任务“最终成功”并不代表系统过程优秀。它可能是：
+
+反复撞墙后偶然成功
+
+也可能是：
+
+一次正确规划，零隐藏副作用，证据完整
+
+这两种成功应该被区分。
+
+23.5 何时需要人工确认
+
+不是所有任务都应该自动修复。以下情况可能需要人工确认：
+
+- 目标绑定有多个同等候选；
+- 修复动作会移动用户指定以外的物体；
+- 物体价值或风险较高；
+- 物理结果不明；
+- 递归修复超过阈值；
+- 需要进入可能伤害设备或环境的区域；
+- 任务约束互相冲突。
+
+人工确认也可以作为一种正式任务节点，而不是外部偷偷打断程序。
+
+----------------------------------------------------------------
+24. 最终结论
+
+这套系统可以被看成四层转换：
+
+自然语言
+    -> 意图程序
+意图程序
+    -> 任务递归树
+任务递归树
+    -> 受约束的物理动作
+物理动作
+    -> 观察驱动的世界状态和下一步决策
+
+所以它的本质不是：
+
+“让大模型直接操纵机器人。”
+
+而是：
+
+让大模型把人的自然语言目标编译成一种机器人领域程序，再由一个拥有明确状态、权限、证据和恢复机制的运行时系统执行这份程序。
+
+这个系统最值得记住的五句话是：
+
+1. 自然语言表达意图，不直接表达电机控制。
+2. 任务树是动态的领域程序，不是普通的待办清单。
+3. 世界快照是现实证据，不是任务树的附属字段。
+4. 工件把规划结果变成带版本和依赖的中间值。
+5. 失败不是一句报错，而是可以驱动递归修复的程序输入。
+
+如果要用一句最完整的话给这套架构下定义，可以说：
+
+Task Recursive Tree Agent 是一个以自然语言为高层入口、以类型化任务树为中间程序、以 Kernel 为解释器、以 Artifact 为计划数据、以 HarnessRuntime 为物理系统调用边界、以 Observation 和 Verifier 为现实反馈闭环的机器人运行时架构。
+
+----------------------------------------------------------------
+附录 A：术语速查
+
+| 术语 | 通俗解释 |
+| --- | --- |
+| TaskProgram | 用户目标的结构化任务意图 |
+| SpatialSelector | 如何从世界中找到对象或区域 |
+| TaskNodeSpec | 节点的静态定义 |
+| TaskNodeRuntime | 节点本次运行的状态 |
+| TaskEdge | 节点之间的 child 或 repair 关系 |
+| GraphDelta | 对任务图的受约束增量修改 |
+| TaskTreeStore | 唯一权威运行时树状态 |
+| TaskTreeKernel | 唯一节点生命周期解释器和 Store 写入者 |
+| ExecutionFrame | 当前执行栈中的一个节点阶段 |
+| WorldSnapshot | 某一时刻现实世界的不可变快照 |
+| EntityState | 物体、区域等实体的状态 |
+| RobotState | 机器人底盘、关节、夹爪和持物状态 |
+| Observation | 物理动作后的观察结果 |
+| Artifact | 基于某个世界状态生成的不可变计划工件 |
+| ActionRequest | 经过技能翻译的受限物理动作请求 |
+| HarnessRuntime | 唯一物理执行入口 |
+| Verifier | 根据世界快照检查谓词和目标 |
+| Diagnostic | 结构化失败原因 |
+| RepairProposal | 修复器提出的修复子树方案 |
+| reconciliation | 物理结果不明时重新观察并对账 |
+
+附录 B：源码阅读路线
+
+建议按以下顺序阅读代码：
+
+1. task/ir.py：理解 TaskProgram；
+2. selection/model.py 和 selection/engine.py：理解语义选择；
+3. task/model.py：理解节点、边、运行态和事件；
+4. task/compiler.py：理解根节点编译；
+5. task/store.py：理解所有权和写入能力；
+6. task/kernel.py：理解生命周期和执行栈；
+7. world/state.py 和 world/model.py：理解快照和版本；
+8. artifacts/model.py 和 artifacts/store.py：理解工件及别名；
+9. task/operations.py：理解规划和验证操作；
+10. skills/physical.py：理解工件到动作请求的翻译；
+11. runtime/harness.py：理解物理边界；
+12. task/repair.py：理解核心修复协议；
+13. session/continuous.py：理解跨任务连续世界；
+14. integrations/gemini_er2/：理解 Harness 适配层如何接入同一内核。
+
+----------------------------------------------------------------
+附录 C：读完后自测
+
+如果下面的问题都能回答，基本就已经理解了这套架构：
+
+1. 为什么 LLM 不能直接修改 TaskTreeStore？
+2. 为什么 TaskNodeSpec 和 TaskNodeRuntime 要分开？
+3. 为什么 A* 不是一个任务树节点？
+4. 为什么动作后必须生成 Observation？
+5. 为什么规划工件必须带 snapshot_ref 和依赖版本？
+6. 为什么移动障碍物必须成为任务节点？
+7. 为什么失败后要挂载 repair 边，而不是直接把失败节点改成成功？
+8. 为什么每条新任务要有新的任务树，但不能重置共享世界？
+9. OUTCOME_UNKNOWN 和 FAILED 有什么区别？
+10. 当前系统为什么还不能被称为完整的生产级机器人操作系统？
+
+最简答案可以归纳为：
+
+因为自然语言只负责提出目标，
+任务树负责表达执行语义，
+WorldSnapshot 负责提供现实证据，
+Artifact 负责承载可追踪计划，
+HarnessRuntime 负责控制物理副作用，
+Kernel 负责把所有状态变化按规则串起来。

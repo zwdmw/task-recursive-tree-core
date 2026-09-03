@@ -1,0 +1,2952 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1800, initial-scale=1">
+  <title>把绿球放进空盘子：系统全过程通俗长图</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #52606c;
+      --line: #c9d2d9;
+      --paper: #ffffff;
+      --canvas: #e6ebef;
+      --deep: #20343f;
+      --deep-2: #2d4957;
+      --blue: #2869a8;
+      --blue-soft: #edf5fc;
+      --green: #2f7f53;
+      --green-soft: #edf7f1;
+      --amber: #a86b0d;
+      --amber-soft: #fff6e5;
+      --red: #ad4a3c;
+      --red-soft: #fff0ed;
+      --violet: #755b94;
+      --violet-soft: #f4eff9;
+      --teal: #16777b;
+      --teal-soft: #eaf7f7;
+      --gray-soft: #f5f7f8;
+      --ball-green: #43a95e;
+      --ball-red: #d45249;
+      --box-yellow: #e3aa30;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1800px;
+      min-width: 1800px;
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif;
+      font-size: 22px;
+      line-height: 1.58;
+      letter-spacing: 0;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .poster {
+      width: 1800px;
+      background: var(--paper);
+    }
+
+    .inner {
+      width: 1580px;
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 920px;
+      padding: 76px 0 66px;
+      color: #fff;
+      background: var(--deep);
+      border-bottom: 12px solid var(--teal);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 8px 15px;
+      color: #d6f0ee;
+      border: 1px solid #78b6b3;
+      border-radius: 4px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 28px 0 16px;
+      font-size: 78px;
+      line-height: 1.12;
+      font-weight: 900;
+    }
+
+    .hero-subtitle {
+      max-width: 1460px;
+      margin: 0;
+      color: #dce6eb;
+      font-size: 30px;
+      line-height: 1.58;
+    }
+
+    .hero-route {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 9px;
+      align-items: stretch;
+      margin-top: 40px;
+    }
+
+    .hero-step {
+      position: relative;
+      min-height: 116px;
+      padding: 18px 15px;
+      color: var(--ink);
+      background: #fff;
+      border-top: 6px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .hero-step:nth-child(2),
+    .hero-step:nth-child(6) {
+      border-top-color: var(--green);
+    }
+
+    .hero-step:nth-child(3),
+    .hero-step:nth-child(5) {
+      border-top-color: var(--amber);
+    }
+
+    .hero-step:nth-child(4) {
+      border-top-color: var(--red);
+    }
+
+    .hero-step:nth-child(7) {
+      border-top-color: var(--teal);
+    }
+
+    .hero-step b,
+    .hero-step span {
+      display: block;
+    }
+
+    .hero-step b {
+      font-size: 22px;
+    }
+
+    .hero-step span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .metric {
+      min-height: 88px;
+      padding: 14px 12px;
+      background: var(--deep-2);
+      border-top: 4px solid #7cc7c2;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .metric strong,
+    .metric span {
+      display: block;
+    }
+
+    .metric strong {
+      font-size: 27px;
+      line-height: 1.2;
+    }
+
+    .metric span {
+      margin-top: 5px;
+      color: #d6e2e7;
+      font-size: 17px;
+    }
+
+    section {
+      position: relative;
+      padding: 68px 0 74px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    section.alt {
+      background: #f7f9fa;
+    }
+
+    section.world {
+      background: #f2f8f4;
+      border-top: 8px solid var(--green);
+    }
+
+    section.problem {
+      background: #fff8f2;
+      border-top: 8px solid var(--amber);
+    }
+
+    section.uncertain {
+      background: #fff5f3;
+      border-top: 8px solid var(--red);
+    }
+
+    section.final {
+      background: #edf7f4;
+      border-top: 8px solid var(--teal);
+    }
+
+    section.architecture {
+      background: #f1f6fa;
+      border-top: 8px solid var(--blue);
+    }
+
+    .section-label {
+      color: var(--teal);
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .world .section-label {
+      color: var(--green);
+    }
+
+    .problem .section-label {
+      color: var(--amber);
+    }
+
+    .uncertain .section-label {
+      color: var(--red);
+    }
+
+    .architecture .section-label {
+      color: var(--blue);
+    }
+
+    h2 {
+      margin: 8px 0 14px;
+      font-size: 46px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.35;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lead {
+      max-width: 1480px;
+      color: var(--muted);
+      font-size: 24px;
+      line-height: 1.7;
+    }
+
+    .plain-note {
+      margin-top: 24px;
+      padding: 18px 22px;
+      color: #214c48;
+      background: var(--teal-soft);
+      border-left: 7px solid var(--teal);
+      border-radius: 4px;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .warning-note {
+      margin-top: 24px;
+      padding: 18px 22px;
+      color: #70382f;
+      background: var(--red-soft);
+      border-left: 7px solid var(--red);
+      border-radius: 4px;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .architecture-map {
+      margin-top: 32px;
+      padding: 24px;
+      background: #fff;
+      border: 2px solid #9db5c6;
+      border-radius: 5px;
+    }
+
+    .architecture-map h3 {
+      margin-bottom: 18px;
+      color: #244d6d;
+    }
+
+    .arch-band {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 14px;
+    }
+
+    .arch-band:first-of-type {
+      margin-top: 0;
+    }
+
+    .arch-band-label {
+      display: grid;
+      place-items: center;
+      min-height: 132px;
+      padding: 14px;
+      color: #fff;
+      background: var(--blue);
+      border-radius: 4px;
+      font-size: 24px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .arch-band-label.problem-line {
+      background: var(--amber);
+    }
+
+    .arch-band-label.reality-line {
+      background: var(--green);
+    }
+
+    .arch-chain {
+      display: flex;
+      align-items: stretch;
+      min-width: 0;
+    }
+
+    .arch-unit {
+      display: grid;
+      align-content: center;
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 132px;
+      padding: 14px 11px;
+      background: var(--gray-soft);
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .arch-unit.problem-unit {
+      background: var(--amber-soft);
+      border-top-color: var(--amber);
+    }
+
+    .arch-unit.reality-unit {
+      background: var(--green-soft);
+      border-top-color: var(--green);
+    }
+
+    .arch-unit.world-center {
+      color: #fff;
+      background: var(--deep);
+      border-color: var(--deep);
+    }
+
+    .arch-unit b,
+    .arch-unit span {
+      display: block;
+    }
+
+    .arch-unit b {
+      font-size: 19px;
+      line-height: 1.35;
+    }
+
+    .arch-unit span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.42;
+    }
+
+    .arch-unit.world-center span {
+      color: #dbe6eb;
+    }
+
+    .arch-arrow {
+      display: grid;
+      place-items: center;
+      flex: 0 0 31px;
+      color: #71808a;
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .arch-feed {
+      margin-top: 14px;
+      padding: 15px 18px;
+      color: #245d40;
+      background: var(--green-soft);
+      border-left: 7px solid var(--green);
+      border-radius: 4px;
+      font-size: 18px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .architecture-subtitle {
+      margin-top: 34px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #9db5c6;
+      font-size: 29px;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .role-card {
+      min-height: 260px;
+      padding: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+    }
+
+    .role-card:nth-child(2),
+    .role-card:nth-child(7) {
+      border-top-color: var(--green);
+    }
+
+    .role-card:nth-child(3),
+    .role-card:nth-child(6) {
+      border-top-color: var(--teal);
+    }
+
+    .role-card:nth-child(4),
+    .role-card:nth-child(5) {
+      border-top-color: var(--amber);
+    }
+
+    .role-card:nth-child(8) {
+      border-top-color: var(--violet);
+    }
+
+    .role-card h3 {
+      font-size: 23px;
+    }
+
+    .role-line {
+      margin-top: 10px;
+      padding-top: 9px;
+      color: var(--muted);
+      border-top: 1px solid #e2e7ea;
+      font-size: 16px;
+      line-height: 1.48;
+    }
+
+    .role-line b {
+      color: var(--ink);
+    }
+
+    .ledger-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .ledger {
+      min-height: 222px;
+      padding: 18px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-left: 7px solid var(--blue);
+      border-radius: 4px;
+    }
+
+    .ledger:nth-child(2) {
+      border-left-color: var(--amber);
+    }
+
+    .ledger:nth-child(3) {
+      border-left-color: var(--teal);
+    }
+
+    .ledger:nth-child(4) {
+      border-left-color: var(--green);
+    }
+
+    .ledger-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      margin-bottom: 10px;
+      color: #fff;
+      background: var(--deep);
+      border-radius: 4px;
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .ledger .ledger-mark {
+      display: inline-grid;
+    }
+
+    .ledger b,
+    .ledger span {
+      display: block;
+    }
+
+    .ledger b {
+      font-size: 22px;
+    }
+
+    .ledger span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .authority-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .authority {
+      min-height: 154px;
+      padding: 18px;
+      background: #fff;
+      border: 2px solid #a8bac5;
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .authority:nth-child(2) {
+      border-top-color: var(--green);
+    }
+
+    .authority:nth-child(3) {
+      border-top-color: var(--red);
+    }
+
+    .authority b,
+    .authority span {
+      display: block;
+    }
+
+    .authority b {
+      font-size: 22px;
+    }
+
+    .authority span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .architecture-instance {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 42px 48px;
+      margin-top: 18px;
+    }
+
+    .architecture-instance-step {
+      position: relative;
+      min-height: 162px;
+      padding: 17px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+    }
+
+    .architecture-instance-step:nth-child(3),
+    .architecture-instance-step:nth-child(7) {
+      border-top-color: var(--green);
+    }
+
+    .architecture-instance-step:nth-child(4),
+    .architecture-instance-step:nth-child(5),
+    .architecture-instance-step:nth-child(6) {
+      border-top-color: var(--amber);
+    }
+
+    .architecture-instance-step:nth-child(8) {
+      border-top-color: var(--teal);
+    }
+
+    .architecture-instance-step:not(:nth-child(4n))::after {
+      content: "→";
+      position: absolute;
+      top: 51px;
+      right: -39px;
+      color: #71808a;
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .architecture-instance-step b,
+    .architecture-instance-step span {
+      display: block;
+    }
+
+    .architecture-instance-step b {
+      font-size: 21px;
+    }
+
+    .architecture-instance-step span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.48;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 54px 52px;
+      margin-top: 34px;
+    }
+
+    .overview-box {
+      position: relative;
+      min-height: 172px;
+      padding: 20px 20px 18px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 5px;
+    }
+
+    .overview-box:nth-child(2),
+    .overview-box:nth-child(7),
+    .overview-box:nth-child(10) {
+      border-top-color: var(--green);
+    }
+
+    .overview-box:nth-child(4),
+    .overview-box:nth-child(5),
+    .overview-box:nth-child(8) {
+      border-top-color: var(--amber);
+    }
+
+    .overview-box:nth-child(6),
+    .overview-box:nth-child(9) {
+      border-top-color: var(--red);
+    }
+
+    .overview-box:nth-child(12) {
+      border-top-color: var(--teal);
+    }
+
+    .overview-box:not(:nth-child(4n))::after {
+      content: "→";
+      position: absolute;
+      top: 55px;
+      right: -42px;
+      width: 30px;
+      color: #71808a;
+      font-size: 38px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .overview-box b,
+    .overview-box span {
+      display: block;
+    }
+
+    .overview-box b {
+      font-size: 24px;
+    }
+
+    .overview-box span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .step-badge {
+      display: inline-grid;
+      place-items: center;
+      width: 48px;
+      height: 34px;
+      margin-right: 8px;
+      color: #fff;
+      background: var(--deep);
+      border-radius: 17px;
+      font-size: 17px;
+      white-space: nowrap;
+      vertical-align: 2px;
+    }
+
+    .overview-box .step-badge {
+      display: inline-grid;
+    }
+
+    .scene-layout {
+      display: grid;
+      grid-template-columns: 1.22fr 0.78fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-top: 30px;
+    }
+
+    .scene {
+      padding: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+
+    .scene svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .world-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .world-row {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 12px;
+      align-items: start;
+      min-height: 82px;
+      padding: 13px 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--blue);
+      border-radius: 4px;
+    }
+
+    .world-row.red {
+      border-left-color: var(--red);
+    }
+
+    .world-row.green {
+      border-left-color: var(--green);
+    }
+
+    .world-row.yellow {
+      border-left-color: var(--amber);
+    }
+
+    .world-row.teal {
+      border-left-color: var(--teal);
+    }
+
+    .object-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      color: #fff;
+      background: var(--blue);
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .world-row .object-mark {
+      display: inline-grid;
+    }
+
+    .object-mark.ball-green {
+      background: var(--ball-green);
+    }
+
+    .object-mark.ball-red {
+      background: var(--ball-red);
+    }
+
+    .object-mark.box {
+      background: var(--box-yellow);
+      border-radius: 4px;
+    }
+
+    .object-mark.plate {
+      color: #31434e;
+      background: #e6edf0;
+      border: 3px solid #80919c;
+    }
+
+    .object-mark.grip {
+      background: var(--teal);
+    }
+
+    .world-row b,
+    .world-row span {
+      display: block;
+    }
+
+    .world-row b {
+      font-size: 20px;
+    }
+
+    .world-row span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .source-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .source-box {
+      min-height: 120px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 6px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .source-box:nth-child(2),
+    .source-box:nth-child(6) {
+      border-top-color: var(--green);
+    }
+
+    .source-box:nth-child(3),
+    .source-box:nth-child(5) {
+      border-top-color: var(--amber);
+    }
+
+    .source-box:nth-child(4) {
+      border-top-color: var(--red);
+    }
+
+    .source-box b,
+    .source-box span {
+      display: block;
+    }
+
+    .source-box b {
+      font-size: 20px;
+    }
+
+    .source-box span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .down-arrow {
+      height: 54px;
+      color: #71808a;
+      font-size: 42px;
+      line-height: 54px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .construction {
+      display: grid;
+      gap: 18px;
+      margin-top: 32px;
+    }
+
+    .construction-step {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .construction-number {
+      display: grid;
+      place-items: center;
+      min-height: 184px;
+      color: #fff;
+      background: var(--deep);
+      border-radius: 5px;
+      font-size: 38px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .construction-step:nth-child(2) .construction-number,
+    .construction-step:nth-child(6) .construction-number {
+      background: var(--green);
+    }
+
+    .construction-step:nth-child(3) .construction-number,
+    .construction-step:nth-child(5) .construction-number {
+      background: var(--amber);
+    }
+
+    .construction-step:nth-child(4) .construction-number {
+      background: var(--red);
+    }
+
+    .construction-step:nth-child(7) .construction-number {
+      background: var(--teal);
+    }
+
+    .construction-body {
+      padding: 18px 20px 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+
+    .construction-body h3 {
+      margin-bottom: 13px;
+    }
+
+    .three-part {
+      display: grid;
+      grid-template-columns: 0.86fr 1.02fr 1.12fr;
+      gap: 12px;
+    }
+
+    .part {
+      min-height: 112px;
+      padding: 13px 15px;
+      background: var(--gray-soft);
+      border-left: 5px solid var(--blue);
+      border-radius: 3px;
+    }
+
+    .part.think {
+      background: var(--amber-soft);
+      border-left-color: var(--amber);
+    }
+
+    .part.actual {
+      background: var(--green-soft);
+      border-left-color: var(--green);
+    }
+
+    .part b,
+    .part span {
+      display: block;
+    }
+
+    .part b {
+      font-size: 18px;
+    }
+
+    .part span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .snapshot-title {
+      margin-top: 34px;
+      padding: 16px 20px;
+      color: #fff;
+      background: var(--deep);
+      border-radius: 4px 4px 0 0;
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .snapshot-table {
+      display: grid;
+      grid-template-columns: 170px 280px 310px 1fr 140px;
+      border: 1px solid var(--line);
+      border-top: 0;
+      background: #fff;
+    }
+
+    .snapshot-table > div {
+      min-height: 72px;
+      padding: 13px 14px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+      line-height: 1.48;
+    }
+
+    .snapshot-table > div:nth-child(5n) {
+      border-right: 0;
+    }
+
+    .snapshot-table > div:nth-last-child(-n + 5) {
+      border-bottom: 0;
+    }
+
+    .snapshot-table .head {
+      min-height: 58px;
+      color: #fff;
+      background: var(--deep-2);
+      font-weight: 900;
+    }
+
+    .snapshot-table .name {
+      background: #f0f4f6;
+      font-weight: 900;
+    }
+
+    .status-ok {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .version-flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 34px;
+      margin-top: 26px;
+    }
+
+    .version-box {
+      position: relative;
+      min-height: 128px;
+      padding: 17px;
+      background: #fff;
+      border: 2px solid #9bc0aa;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .version-box:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 38px;
+      right: -31px;
+      width: 28px;
+      color: #71808a;
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .version-box b,
+    .version-box span {
+      display: block;
+    }
+
+    .version-box b {
+      color: var(--green);
+      font-size: 23px;
+    }
+
+    .version-box span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .four-questions {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 30px;
+    }
+
+    .question {
+      min-height: 192px;
+      padding: 18px 19px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+    }
+
+    .question:nth-child(2) {
+      border-top-color: var(--green);
+    }
+
+    .question:nth-child(3) {
+      border-top-color: var(--amber);
+    }
+
+    .question:nth-child(4) {
+      border-top-color: var(--teal);
+    }
+
+    .question b,
+    .question span,
+    .question strong {
+      display: block;
+    }
+
+    .question b {
+      font-size: 23px;
+    }
+
+    .question span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .question strong {
+      margin-top: 11px;
+      color: var(--ink);
+      font-size: 19px;
+    }
+
+    .task-sheet {
+      margin-top: 22px;
+      padding: 22px;
+      background: var(--blue-soft);
+      border: 2px solid #91b9db;
+      border-radius: 5px;
+    }
+
+    .task-sheet h3 {
+      color: #245b8a;
+    }
+
+    .task-lines {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .task-line {
+      min-height: 96px;
+      padding: 13px 14px;
+      background: #fff;
+      border-left: 5px solid var(--blue);
+      border-radius: 3px;
+      font-size: 17px;
+    }
+
+    .task-line b,
+    .task-line span {
+      display: block;
+    }
+
+    .task-line span {
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    .filter-flow {
+      display: grid;
+      grid-template-columns: 1fr 54px 1fr 54px 1fr 54px 1fr;
+      align-items: stretch;
+      margin-top: 28px;
+    }
+
+    .filter-box {
+      min-height: 142px;
+      padding: 18px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .filter-box.result {
+      background: var(--green-soft);
+      border-color: #87b99b;
+    }
+
+    .filter-box b,
+    .filter-box span {
+      display: block;
+    }
+
+    .filter-box b {
+      font-size: 23px;
+    }
+
+    .filter-box span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .filter-arrow {
+      display: grid;
+      place-items: center;
+      color: #71808a;
+      font-size: 36px;
+      font-weight: 900;
+    }
+
+    .decision {
+      display: grid;
+      grid-template-columns: 1fr 78px 1fr;
+      align-items: center;
+      margin-top: 28px;
+    }
+
+    .decision-box {
+      min-height: 150px;
+      padding: 20px 24px;
+      background: #fff;
+      border: 3px solid var(--amber);
+      border-radius: 5px;
+      text-align: center;
+    }
+
+    .decision-box.answer {
+      color: #733a31;
+      background: var(--red-soft);
+      border-color: var(--red);
+    }
+
+    .decision-box b,
+    .decision-box span {
+      display: block;
+    }
+
+    .decision-box b {
+      font-size: 28px;
+    }
+
+    .decision-box span {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .decision-arrow {
+      color: #71808a;
+      font-size: 42px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .nested-work {
+      margin-top: 30px;
+      padding: 24px;
+      background: #fff;
+      border: 2px solid #9cb3c2;
+      border-radius: 5px;
+    }
+
+    .work-main {
+      padding: 19px 22px;
+      background: var(--blue-soft);
+      border: 2px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .work-main b,
+    .work-main span {
+      display: block;
+    }
+
+    .work-main b {
+      font-size: 27px;
+    }
+
+    .work-main span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .work-line {
+      width: 4px;
+      height: 30px;
+      margin: 0 auto;
+      background: var(--line);
+    }
+
+    .work-repair {
+      padding: 20px;
+      background: #fffaf3;
+      border: 3px dashed var(--amber);
+      border-radius: 5px;
+    }
+
+    .work-repair.second {
+      margin-top: 20px;
+      background: #fff5f2;
+      border-color: var(--red);
+    }
+
+    .work-repair h3 {
+      color: #7e5417;
+    }
+
+    .work-repair.second h3 {
+      color: var(--red);
+    }
+
+    .repair-flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .repair-box {
+      min-height: 112px;
+      padding: 14px 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .repair-box b,
+    .repair-box span {
+      display: block;
+    }
+
+    .repair-box b {
+      font-size: 20px;
+    }
+
+    .repair-box span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .return-strip {
+      display: grid;
+      grid-template-columns: 1fr 70px 1fr 70px 1fr;
+      align-items: center;
+      margin-top: 22px;
+      padding: 17px 20px;
+      color: #1f6544;
+      background: var(--green-soft);
+      border: 1px solid #9ac4aa;
+      border-radius: 4px;
+      font-size: 20px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .return-strip i {
+      font-style: normal;
+      font-size: 36px;
+    }
+
+    .planning-flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 30px;
+      margin-top: 22px;
+    }
+
+    .planning-step {
+      position: relative;
+      min-height: 170px;
+      padding: 17px 14px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .planning-step:nth-child(2),
+    .planning-step:nth-child(3) {
+      border-top-color: var(--amber);
+    }
+
+    .planning-step:nth-child(4),
+    .planning-step:nth-child(5),
+    .planning-step:nth-child(6) {
+      border-top-color: var(--green);
+    }
+
+    .planning-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 55px;
+      right: -28px;
+      color: #71808a;
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .planning-step b,
+    .planning-step span {
+      display: block;
+    }
+
+    .planning-step b {
+      font-size: 20px;
+    }
+
+    .planning-step span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.48;
+    }
+
+    .route-verdict-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 26px;
+    }
+
+    .route-verdict {
+      padding: 22px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 8px solid var(--red);
+      border-radius: 5px;
+    }
+
+    .route-verdict.complete {
+      border-top-color: var(--green);
+    }
+
+    .route-tag {
+      display: inline-block;
+      padding: 5px 10px;
+      color: #fff;
+      background: var(--red);
+      border-radius: 3px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .route-verdict.complete .route-tag {
+      background: var(--green);
+    }
+
+    .route-verdict h3 {
+      margin-top: 12px;
+      font-size: 26px;
+    }
+
+    .route-fact {
+      margin-top: 10px;
+      padding: 10px 0 0;
+      color: var(--muted);
+      border-top: 1px solid #e1e7ea;
+      font-size: 17px;
+      line-height: 1.52;
+    }
+
+    .route-fact b {
+      color: var(--ink);
+    }
+
+    .before-after {
+      display: grid;
+      grid-template-columns: 1fr 90px 1fr;
+      align-items: center;
+      margin-top: 30px;
+    }
+
+    .mini-scene {
+      padding: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+
+    .mini-scene h3 {
+      margin-bottom: 10px;
+    }
+
+    .mini-scene svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .big-arrow {
+      color: #71808a;
+      font-size: 54px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .action-flow {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 32px;
+      margin-top: 26px;
+    }
+
+    .action-box {
+      position: relative;
+      min-height: 142px;
+      padding: 17px 14px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 6px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .action-box:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 43px;
+      right: -29px;
+      color: #71808a;
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .action-box b,
+    .action-box span {
+      display: block;
+    }
+
+    .action-box b {
+      font-size: 21px;
+    }
+
+    .action-box span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .check-loop {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 30px;
+      margin-top: 32px;
+    }
+
+    .loop-box {
+      position: relative;
+      min-height: 166px;
+      padding: 17px 14px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 7px solid var(--blue);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .loop-box:nth-child(2),
+    .loop-box:nth-child(6) {
+      border-top-color: var(--amber);
+    }
+
+    .loop-box:nth-child(3),
+    .loop-box:nth-child(5) {
+      border-top-color: var(--green);
+    }
+
+    .loop-box:nth-child(4) {
+      border-top-color: var(--red);
+    }
+
+    .loop-box:nth-child(7) {
+      border-top-color: var(--teal);
+    }
+
+    .loop-box:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 51px;
+      right: -28px;
+      color: #71808a;
+      font-size: 31px;
+      font-weight: 900;
+    }
+
+    .loop-box b,
+    .loop-box span {
+      display: block;
+    }
+
+    .loop-box b {
+      font-size: 20px;
+    }
+
+    .loop-box span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.48;
+    }
+
+    .example-updates {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .update-box {
+      min-height: 154px;
+      padding: 17px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 7px solid var(--green);
+      border-radius: 4px;
+    }
+
+    .update-box b,
+    .update-box span {
+      display: block;
+    }
+
+    .update-box b {
+      font-size: 21px;
+    }
+
+    .update-box span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.48;
+    }
+
+    .timeout-flow {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 34px;
+      margin-top: 30px;
+    }
+
+    .timeout-box {
+      position: relative;
+      min-height: 170px;
+      padding: 18px 15px;
+      background: #fff;
+      border: 2px solid var(--line);
+      border-top: 7px solid var(--red);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .timeout-box:nth-child(3),
+    .timeout-box:nth-child(4) {
+      border-top-color: var(--amber);
+    }
+
+    .timeout-box:nth-child(5),
+    .timeout-box:nth-child(6) {
+      border-top-color: var(--green);
+    }
+
+    .timeout-box:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 55px;
+      right: -31px;
+      color: #71808a;
+      font-size: 34px;
+      font-weight: 900;
+    }
+
+    .timeout-box b,
+    .timeout-box span {
+      display: block;
+    }
+
+    .timeout-box b {
+      font-size: 21px;
+    }
+
+    .timeout-box span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.48;
+    }
+
+    .success-grid {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 24px;
+      margin-top: 30px;
+    }
+
+    .success-checks {
+      display: grid;
+      gap: 10px;
+    }
+
+    .success-check {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      min-height: 78px;
+      padding: 13px 15px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--green);
+      border-radius: 4px;
+    }
+
+    .success-check i {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      color: #fff;
+      background: var(--green);
+      border-radius: 50%;
+      font-style: normal;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .success-check b,
+    .success-check span {
+      display: block;
+    }
+
+    .success-check b {
+      font-size: 20px;
+    }
+
+    .success-check span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .compare-worlds {
+      display: grid;
+      grid-template-columns: 1fr 74px 1fr;
+      align-items: stretch;
+      margin-top: 30px;
+    }
+
+    .compare-list {
+      padding: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-top: 7px solid var(--red);
+      border-radius: 4px;
+    }
+
+    .compare-list.after {
+      border-top-color: var(--green);
+    }
+
+    .compare-list h3 {
+      margin-bottom: 12px;
+    }
+
+    .compare-list p {
+      padding: 7px 0;
+      color: var(--muted);
+      border-bottom: 1px solid #e4e9ec;
+      font-size: 18px;
+    }
+
+    .compare-list p:last-child {
+      border-bottom: 0;
+    }
+
+    footer {
+      padding: 50px 0 56px;
+      color: #d5e0e5;
+      background: #172a34;
+      border-top: 8px solid var(--teal);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 36px;
+    }
+
+    footer h3 {
+      color: #fff;
+      font-size: 25px;
+    }
+
+    footer p {
+      margin-top: 8px;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <header>
+      <div class="inner">
+        <span class="eyebrow">全中文通俗流程长图 · 绿球任务实例</span>
+        <h1>把绿球放进空盘子</h1>
+        <p class="hero-subtitle">
+          从系统第一次看见现场，到发现盘子被占、首批正面路线受阻，再到本次运行选择搬箱、逐层返回并确认成功。
+          图中同时讲清一个关键纠正：黄箱没有堵死整个空间，从桌子侧面绕到桌后本来可行。
+        </p>
+
+        <div class="hero-route">
+          <div class="hero-step"><b>接收任务</b><span>把绿球放进空盘子</span></div>
+          <div class="hero-step"><b>看清现场</b><span>收集物体、位置和机器人状态</span></div>
+          <div class="hero-step"><b>整理清单</b><span>形成同一时刻的可靠记录</span></div>
+          <div class="hero-step"><b>检查路线</b><span>正面候选受阻，桌侧仍可绕行</span></div>
+          <div class="hero-step"><b>本次选择</b><span>系统先搬黄箱，再搬红球</span></div>
+          <div class="hero-step"><b>完成主任务</b><span>抓绿球，搬到盘中</span></div>
+          <div class="hero-step"><b>重新确认</b><span>以最后看到的世界为准</span></div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><strong>4 分 32 秒</strong><span>完整运行用时</span></div>
+          <div class="metric"><strong>470 次</strong><span>系统检查</span></div>
+          <div class="metric"><strong>75 个</strong><span>最终步骤</span></div>
+          <div class="metric"><strong>2 层</strong><span>临时问题嵌套</span></div>
+          <div class="metric"><strong>第 1 版到第 74 版</strong><span>世界状态更新</span></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-label">第一部分 · 一眼看懂</div>
+        <h2>整个过程不是“一抓一放”，而是边做、边看、边解决新问题</h2>
+        <p class="lead">
+          系统始终保留原任务。遇到阻碍时，先把原任务暂停，插入一个临时任务；
+          如果临时任务又遇到阻碍，就可能再插入一个更小的任务。这里还要分清：
+          “当前试过的位置失败”不等于“整个空间没有其他路线”。
+        </p>
+
+        <div class="overview">
+          <div class="overview-box"><b><span class="step-badge">一</span>收到一句话</b><span>用户说：“把绿球放进空盘子。”</span></div>
+          <div class="overview-box"><b><span class="step-badge">二</span>查看现场</b><span>确认绿球、红球、盘子、黄箱、桌面、地面和夹爪。</span></div>
+          <div class="overview-box"><b><span class="step-badge">三</span>整理世界清单</b><span>把零散观察统一成第 1 版可靠记录。</span></div>
+          <div class="overview-box"><b><span class="step-badge">四</span>理解任务</b><span>要搬的是绿球；目标是盘子；放入前盘子必须为空。</span></div>
+
+          <div class="overview-box"><b><span class="step-badge">五</span>检查盘子</b><span>发现红球正在盘子里，所以原任务暂时不能开始。</span></div>
+          <div class="overview-box"><b><span class="step-badge">六</span>准备搬红球</b><span>新建临时任务：把红球从盘子搬到地面。</span></div>
+          <div class="overview-box"><b><span class="step-badge">七</span>首批候选受阻</b><span>当时生成的正面接近位置与黄箱冲突；这只说明这些位置失败。</span></div>
+          <div class="overview-box"><b><span class="step-badge">八</span>本次改搬黄箱</b><span>系统没有继续比较桌侧绕行，直接插入了搬黄箱任务。</span></div>
+
+          <div class="overview-box"><b><span class="step-badge">九</span>再搬红球</b><span>把红球放到地面，重新观察，确认盘子已经清空。</span></div>
+          <div class="overview-box"><b><span class="step-badge">十</span>回到原任务</b><span>重新计算路线，抓起地面的绿球。</span></div>
+          <div class="overview-box"><b><span class="step-badge">十一</span>放入盘中</b><span>把绿球搬到盘子上方并松开夹爪。</span></div>
+          <div class="overview-box"><b><span class="step-badge">十二</span>最终确认</b><span>绿球在盘中、夹爪已空、其他临时任务也都完成。</span></div>
+        </div>
+
+        <div class="plain-note">
+          本次真实运行确实形成了“先黄箱、再红球、最后绿球”的递归办事链；
+          但搬黄箱是系统当时作出的选择，不是这个场景唯一可行的办法。
+        </div>
+      </div>
+    </section>
+
+    <section class="architecture">
+      <div class="inner">
+        <div class="section-label">第二部分 · 整个系统架构</div>
+        <h2>先认识整套系统：不是一个“大脑”直接控制机器人</h2>
+        <p class="lead">
+          整个系统更像一组分工明确的岗位。有人负责听懂任务，有人保存当前世界，有人安排办事顺序，
+          有人准备路线，有人把守机器人入口，还有人只负责在最后核对结果。任何一个岗位都不能越过自己的职责。
+        </p>
+
+        <div class="architecture-map">
+          <h3>总架构图：主任务、现实回传和问题处理三条路线同时运转</h3>
+
+          <div class="arch-band">
+            <div class="arch-band-label">主任务路线</div>
+            <div class="arch-chain">
+              <div class="arch-unit"><b>用户任务</b><span>说出想要的最终结果</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>任务理解处</b><span>弄清搬什么、放哪里、有什么要求</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>任务总管</b><span>安排步骤、暂停位置和返回顺序</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>条件检查处</b><span>查看现在能不能做、做完没有</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>路线准备处</b><span>生成多个接近位置，逐个查路并比较方案</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>动作安全闸门</b><span>最后检查后，只放行一次动作</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit"><b>机器人</b><span>真正移动、抓取和放下</span></div>
+            </div>
+          </div>
+
+          <div class="arch-band">
+            <div class="arch-band-label reality-line">现实回传路线</div>
+            <div class="arch-chain">
+              <div class="arch-unit reality-unit"><b>机器人做出动作</b><span>现实中的位置和夹爪可能发生变化</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit reality-unit"><b>摄像头与状态回报</b><span>重新看到物体、夹爪、固定环境和安全情况</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit world-center"><b>世界状态中心</b><span>只把已经确认的变化写成新一版世界</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit reality-unit"><b>独立结果核对</b><span>不看动作口头回报，只看最新世界是否达标</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit reality-unit"><b>决定下一步</b><span>继续、处理问题、重新准备，或者结束</span></div>
+            </div>
+          </div>
+
+          <div class="arch-band">
+            <div class="arch-band-label problem-line">问题处理路线</div>
+            <div class="arch-chain">
+              <div class="arch-unit problem-unit"><b>当前条件不满足</b><span>例如盘子不空，或者当前候选路线失败</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit problem-unit"><b>说明具体原因</b><span>区分环境事实、候选失败和是否真的无路</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit problem-unit"><b>选择处理办法</b><span>先比较绕行；确需改变环境时再插入临时任务</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit problem-unit"><b>临时任务走同一套系统</b><span>同样要检查、准备、执行和观察</span></div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-unit problem-unit"><b>解决后原路返回</b><span>回到上一个暂停点继续，而不是从头乱做</span></div>
+            </div>
+          </div>
+
+          <div class="arch-feed">
+            世界状态中心只保存“物体在哪里”等事实；“哪条路线被挡、是否还有绕路”属于路线准备处的判断，不能提前写成世界事实。
+          </div>
+        </div>
+
+        <h3 class="architecture-subtitle">八个岗位分别负责什么</h3>
+        <div class="role-grid">
+          <div class="role-card">
+            <h3>一 · 任务接收与理解</h3>
+            <div class="role-line"><b>收到：</b>用户的话和现场中可用物体的概况。</div>
+            <div class="role-line"><b>只负责：</b>弄清目标物体、目标位置、开始要求和完成标准。</div>
+            <div class="role-line"><b>本次交出：</b>搬绿球；放进盘子；放入前盘子要空；最后夹爪要松开。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>二 · 世界状态中心</h3>
+            <div class="role-line"><b>收到：</b>物体观察、夹爪回报、安全信息和动作后的新证据。</div>
+            <div class="role-line"><b>只负责：</b>消除矛盾，把同一时刻已确认的事实整理成一版世界。</div>
+            <div class="role-line"><b>本次交出：</b>第 1 版记录红球在盘中、黄箱在正面区域；之后持续更新到第 74 版。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>三 · 任务总管</h3>
+            <div class="role-line"><b>收到：</b>任务说明书和每一步的执行结果。</div>
+            <div class="role-line"><b>只负责：</b>决定当前做哪一步、哪里暂停、临时任务放在哪里、完成后回到哪里。</div>
+            <div class="role-line"><b>本次交出：</b>先保留绿球任务，再插入红球任务，又在红球任务前插入黄箱任务。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>四 · 条件与问题检查</h3>
+            <div class="role-line"><b>收到：</b>当前步骤、它的开始要求，以及最新世界状态。</div>
+            <div class="role-line"><b>只负责：</b>判断能否开始、是否完成；不满足时说明具体原因。</div>
+            <div class="role-line"><b>本次交出：</b>“红球让盘子不空”；路线是否可达则交给路线准备处逐条检查。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>五 · 路线与落点准备</h3>
+            <div class="role-line"><b>收到：</b>最新世界、要搬的物体、目标位置和机器人大小。</div>
+            <div class="role-line"><b>只负责：</b>先在目标四周找可停位置，再查底盘路线、机械臂抓取和放置安全，最后比较各方案代价。</div>
+            <div class="role-line"><b>本次交出：</b>首批两个正面位置被黄箱挡住；桌侧绕行没有进入本次比较，这是规划覆盖不足。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>六 · 动作安全闸门</h3>
+            <div class="role-line"><b>收到：</b>当前步骤、准备好的路线和最新世界。</div>
+            <div class="role-line"><b>只负责：</b>最后检查路线是否过期、夹爪是否可用、动作是否已经发过，以及现在是否安全。</div>
+            <div class="role-line"><b>本次交出：</b>把 14 次实际动作逐次放行；最后一次超时后禁止盲目重复。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>七 · 机器人与现场观察</h3>
+            <div class="role-line"><b>收到：</b>已经通过安全闸门的单次动作。</div>
+            <div class="role-line"><b>只负责：</b>真正移动、抓取、搬运、放下，并把现场的新变化重新报告回来。</div>
+            <div class="role-line"><b>本次交出：</b>黄箱上桌、红球落地、绿球入盘，以及每次动作后的夹爪状态。</div>
+          </div>
+
+          <div class="role-card">
+            <h3>八 · 最终核对</h3>
+            <div class="role-line"><b>收到：</b>原始目标、临时任务留下的要求和最新世界状态。</div>
+            <div class="role-line"><b>只负责：</b>独立判断现在的世界是否真的满足目标；不能用“动作说成功”代替现场事实。</div>
+            <div class="role-line"><b>本次交出：</b>第 74 版世界满足全部要求，整项任务才正式结束。</div>
+          </div>
+        </div>
+
+        <h3 class="architecture-subtitle">系统内部持续保存的“四本账”</h3>
+        <div class="ledger-grid">
+          <div class="ledger">
+            <span class="ledger-mark">世</span>
+            <b>世界事实账</b>
+            <span>记录物体在哪里、夹爪拿着什么以及安全是否正常。只有新的可靠观察能改这本账。</span>
+          </div>
+          <div class="ledger">
+            <span class="ledger-mark">任</span>
+            <b>任务办事账</b>
+            <span>记录当前做到哪一步、什么在等待、插入了哪些临时任务、解决后应该返回哪里。</span>
+          </div>
+          <div class="ledger">
+            <span class="ledger-mark">路</span>
+            <b>路线落点账</b>
+            <span>记录准备好的接近路线、搬运路线和放置位置，以及它们依据的是哪一版世界。世界变了就重新准备。</span>
+          </div>
+          <div class="ledger">
+            <span class="ledger-mark">动</span>
+            <b>动作核对账</b>
+            <span>记录哪次动作已经发送、收到什么回话、后来观察到什么，防止超时或断线时重复做危险动作。</span>
+          </div>
+        </div>
+
+        <h3 class="architecture-subtitle">三条不能越过的权限边界</h3>
+        <div class="authority-grid">
+          <div class="authority">
+            <b>只有任务总管能改变办事顺序</b>
+            <span>路线准备处和问题检查处只能提出结果，不能偷偷插入或跳过步骤。</span>
+          </div>
+          <div class="authority">
+            <b>只有新观察能改变世界事实</b>
+            <span>任务说明、路线方案和动作回话都不能直接宣称物体已经移动。</span>
+          </div>
+          <div class="authority">
+            <b>只有动作安全闸门能触碰机器人</b>
+            <span>听懂任务、判断问题和准备路线的部分，都没有直接控制机器人的权力。</span>
+          </div>
+        </div>
+
+        <h3 class="architecture-subtitle">本次绿球任务怎样穿过整套系统</h3>
+        <div class="architecture-instance">
+          <div class="architecture-instance-step"><b>第一站 · 用户任务</b><span>“把绿球放进空盘子”进入任务接收处。</span></div>
+          <div class="architecture-instance-step"><b>第二站 · 任务说明书</b><span>明确绿球、盘子、盘子要空、最后夹爪要松开。</span></div>
+          <div class="architecture-instance-step"><b>第三站 · 初始世界</b><span>第 1 版清单记录红球在盘中、黄箱在正面区域、夹爪为空。</span></div>
+          <div class="architecture-instance-step"><b>第四站 · 第一次暂停</b><span>条件检查发现盘子不空，任务总管插入“搬红球”。</span></div>
+          <div class="architecture-instance-step"><b>第五站 · 本次路线分支</b><span>首批正面位置被黄箱挡住；系统未比较桌侧绕行，直接插入“搬黄箱”。</span></div>
+          <div class="architecture-instance-step"><b>第六站 · 逐层执行</b><span>安全闸门依次放行搬黄箱、搬红球、搬绿球的动作。</span></div>
+          <div class="architecture-instance-step"><b>第七站 · 持续回看</b><span>每次动作后重新观察，世界状态一路更新到第 74 版。</span></div>
+          <div class="architecture-instance-step"><b>第八站 · 最终结束</b><span>最终核对看到绿球在盘中、夹爪为空，所有临时事项也完成。</span></div>
+        </div>
+
+        <div class="warning-note">
+          架构上的关键约束：路线准备处只能报告“检查过的候选发生了什么”。
+          没有覆盖桌前、左右侧和桌后之前，不能把结果上升为“整个场景无路”。
+        </div>
+
+        <div class="plain-note">
+          后文对应关系：第三、四、五部分重点讲任务理解和世界状态中心；
+          第六到第十部分重点讲任务总管、问题处理和路线准备；
+          第十一、十二部分重点讲动作安全闸门、机器人和现实回传；
+          第十三部分讲最终核对。
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-label">第三部分 · 初始世界</div>
+        <h2>系统第一次看到的现场是什么样</h2>
+        <p class="lead">
+          摄像头画面本身还不是“世界状态”。系统还要把画面、物体资料、夹爪状态、固定环境和安全信息放到一起，
+          才能得到可供后续判断使用的可靠清单。
+        </p>
+
+        <div class="scene-layout">
+          <div class="scene">
+            <svg viewBox="0 0 1000 720" role="img" aria-label="绿球任务初始现场">
+              <rect x="15" y="15" width="970" height="690" rx="5" fill="#eef2ef" stroke="#9baba1" stroke-width="3"/>
+              <text x="40" y="56" fill="#3d5548" font-size="24" font-weight="700">初始现场：正面短路受阻，但桌子外侧仍可绕行</text>
+              <text x="48" y="98" fill="#6a777f" font-size="17">上方是桌后，下方是机器人起点</text>
+
+              <rect x="300" y="125" width="400" height="155" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <text x="466" y="158" fill="#504536" font-size="22" font-weight="700">桌面</text>
+
+              <ellipse cx="560" cy="210" rx="92" ry="34" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="560" cy="210" rx="65" ry="22" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="560" cy="198" r="24" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="712" y="202" fill="#903b35" font-size="20" font-weight="700">红球占着盘子</text>
+
+              <rect x="220" y="280" width="105" height="285" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="675" y="280" width="105" height="285" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <text x="228" y="312" fill="#fff" font-size="17">左固定挡板</text>
+              <text x="683" y="312" fill="#fff" font-size="17">右固定挡板</text>
+              <text x="54" y="425" fill="#4c6c7d" font-size="18" font-weight="700">桌子左侧可通行</text>
+              <text x="800" y="425" fill="#4c6c7d" font-size="18" font-weight="700">桌子右侧可通行</text>
+
+              <rect x="455" y="440" width="90" height="82" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="5"/>
+              <text x="372" y="553" fill="#875b08" font-size="20" font-weight="700">黄箱挡住正面短路</text>
+
+              <path d="M500 626 L500 540 L500 430 L520 345" fill="none" stroke="#b64b3a" stroke-width="8" stroke-dasharray="14 10"/>
+              <line x1="474" y1="414" x2="526" y2="466" stroke="#b64b3a" stroke-width="9"/>
+              <line x1="526" y1="414" x2="474" y2="466" stroke="#b64b3a" stroke-width="9"/>
+              <text x="555" y="392" fill="#a74335" font-size="19" font-weight="700">正面候选到这里失败</text>
+
+              <path d="M500 626 C650 660 790 640 855 560 L855 215 C830 112 760 74 650 72 L610 72"
+                    fill="none" stroke="#2f7f53" stroke-width="9" stroke-dasharray="15 10"/>
+              <polygon points="600,72 624,59 624,85" fill="#2f7f53"/>
+              <circle cx="610" cy="72" r="24" fill="#edf7f1" stroke="#2f7f53" stroke-width="5"/>
+              <path d="M610 96 L570 174" fill="none" stroke="#2f7f53" stroke-width="6"/>
+              <polygon points="563,187 562,160 583,171" fill="#2f7f53"/>
+              <text x="390" y="103" fill="#246d39" font-size="20" font-weight="700">桌后接近位置：可停、可抓</text>
+              <text x="778" y="585" fill="#246d39" font-size="19" font-weight="700">从右侧绕行</text>
+
+              <circle cx="155" cy="625" r="28" fill="#43a95e" stroke="#246d39" stroke-width="5"/>
+              <text x="76" y="674" fill="#246d39" font-size="20" font-weight="700">绿球在地面</text>
+
+              <g transform="translate(500,626)">
+                <rect x="-46" y="-37" width="92" height="74" rx="5" fill="#2869a8" stroke="#174b78" stroke-width="4"/>
+                <circle cx="0" cy="-48" r="19" fill="#dcecff" stroke="#174b78" stroke-width="4"/>
+                <line x1="-19" y1="4" x2="-58" y2="-16" stroke="#174b78" stroke-width="9"/>
+                <line x1="19" y1="4" x2="58" y2="-16" stroke="#174b78" stroke-width="9"/>
+              </g>
+              <text x="386" y="698" fill="#174f7d" font-size="19" font-weight="700">机器人从这里出发，夹爪为空</text>
+            </svg>
+          </div>
+
+          <div class="world-list">
+            <div class="world-row green">
+              <span class="object-mark ball-green">绿</span>
+              <div><b>绿球</b><span>在地面上，可以搬动，目前没有被夹爪抓住。</span></div>
+            </div>
+            <div class="world-row red">
+              <span class="object-mark ball-red">红</span>
+              <div><b>红球</b><span>在盘子里面，正是盘子“不空”的直接原因。</span></div>
+            </div>
+            <div class="world-row">
+              <span class="object-mark plate">盘</span>
+              <div><b>盘子</b><span>位于桌面上，可以盛放球，但当前已经被红球占用。</span></div>
+            </div>
+            <div class="world-row yellow">
+              <span class="object-mark box">箱</span>
+              <div><b>黄箱</b><span>在桌前正面区域，可以搬动，会挡住较短的正面接近路线。</span></div>
+            </div>
+            <div class="world-row teal">
+              <span class="object-mark grip">绕</span>
+              <div><b>外侧空间</b><span>桌子左右侧和后方仍有空间，机器人可以从右侧绕到桌后。</span></div>
+            </div>
+            <div class="world-row teal">
+              <span class="object-mark grip">夹</span>
+              <div><b>机器人状态</b><span>夹爪为空；没有急停或碰撞，可以继续做完整路线检查。</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="plain-note">
+          重要区别：左边是“现场画面”；右边只是为了读者方便而写出的结论。
+          对系统来说，中间还必须经过识别、统一说法、消除矛盾、确认可信程度和同一时刻封存等步骤。
+        </div>
+      </div>
+    </section>
+
+    <section class="world">
+      <div class="inner">
+        <div class="section-label">第四部分 · 最关键的一步</div>
+        <h2>系统怎样把零散观察整理成“世界状态清单”</h2>
+        <p class="lead">
+          世界状态清单可以理解为：系统在某一个时刻，对“有哪些东西、各在哪里、彼此是什么关系、机器人拿着什么、是否安全”
+          做出的一份内部统一记录。它不是原始画面，也不是把所有消息直接堆在一起。
+        </p>
+
+        <div class="source-strip">
+          <div class="source-box"><b>物体资料</b><span>名称、颜色、形状、能否搬动</span></div>
+          <div class="source-box"><b>现场画面</b><span>物体现在出现在哪里</span></div>
+          <div class="source-box"><b>摆放关系</b><span>在地面、桌面还是盘子里</span></div>
+          <div class="source-box"><b>夹爪回报</b><span>空着，还是抓住某个物体</span></div>
+          <div class="source-box"><b>固定环境</b><span>桌子、挡板和可通行范围</span></div>
+          <div class="source-box"><b>安全信息</b><span>能否继续移动和抓取</span></div>
+        </div>
+
+        <div class="down-arrow">↓</div>
+
+        <div class="construction">
+          <div class="construction-step">
+            <div class="construction-number">一</div>
+            <div class="construction-body">
+              <h3>先把同一时刻的消息收齐</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>物体资料、当前画面、夹爪回报、固定环境和安全信息。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>只组合时间足够接近的消息，避免把旧画面和新夹爪状态混成一个世界。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>绿球、红球、盘子、黄箱、桌面、地面都已看见；夹爪为空；安全正常。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">二</div>
+            <div class="construction-body">
+              <h3>认出哪些描述说的是同一个东西</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>不同角度、不同时间看到的“左侧绿色圆球”“地面上的绿球”等描述。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>比较颜色、形状、位置变化和连续观察，给同一件东西保留固定身份，不因视角变化把它当成新物体。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>任务里的“绿球”、画面中的绿色圆球和地面上的可搬物体，被认定为同一个绿球。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">三</div>
+            <div class="construction-body">
+              <h3>把不同说法改成统一、简单的说法</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>“在盘里”“盘子盛着红球”“黄色方箱”“夹爪没有拿东西”等自然说法。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>把颜色、种类、位置、能否搬动分开记录；同一种关系只保留一种写法。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>统一写成：红球在盘子里；黄箱在桌前正面区域；绿球在地面；夹爪为空。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">四</div>
+            <div class="construction-body">
+              <h3>只推出确定关系，把路线结论留给后续规划</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>每个物体在哪里，以及桌子、挡板和可活动区域的形状。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>红球在盘内，可确定“盘子已占用”；黄箱的位置只能说明它可能挡住某些路线，不能推出“所有路线都被挡”。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>盘子不空；黄箱位于正面短路上；桌侧绕行是否可用，要等具体路线和抓取检查。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">五</div>
+            <div class="construction-body">
+              <h3>检查记录里有没有互相打架的说法</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>可能出现“夹爪为空”却又说“夹爪抓着绿球”，或同一球同时在地面和盘中。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>优先采用更新、更清楚、有直接观察支持的说法；仍无法判断时，标成“等待再次确认”。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>初始观察没有冲突：夹爪为空；绿球在地面；红球只在盘中；黄箱只在桌前正面区域。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">六</div>
+            <div class="construction-body">
+              <h3>把“已确认”和“还不确定”分开</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>有些消息来自清楚画面，有些只是一次动作返回，有些可能因为遮挡而看不清。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>只有被观察证实的内容才进入可靠清单；模糊、矛盾或超时的内容不会被当成既成事实。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>初始六项关键信息都有明确依据，因此都能写入第 1 版清单。</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="construction-step">
+            <div class="construction-number">七</div>
+            <div class="construction-body">
+              <h3>把同一时刻的可靠记录封存为一版世界状态</h3>
+              <div class="three-part">
+                <div class="part"><b>系统拿到了什么</b><span>经过前六步整理后，已经互不矛盾、可信程度明确的一组记录。</span></div>
+                <div class="part think"><b>系统怎样整理</b><span>把它们一起封存，标明“这是第几版”。物体、夹爪、任务进度或确认依据有有效变化时，再形成下一版。</span></div>
+                <div class="part actual"><b>这次任务中实际是什么</b><span>第 1 版只写事实：红球在盘中、绿球在地面、黄箱在桌前、夹爪为空、安全正常。</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="snapshot-title">本次任务的第 1 版世界状态清单</div>
+        <div class="snapshot-table">
+          <div class="head">对象</div>
+          <div class="head">统一后的基本说明</div>
+          <div class="head">当前在哪里</div>
+          <div class="head">由此得到的任务结论</div>
+          <div class="head">可信情况</div>
+
+          <div class="name">绿球</div>
+          <div>绿色、圆球、可以搬动</div>
+          <div>地面上</div>
+          <div>是用户要搬的对象，目前可以寻找抓取路线</div>
+          <div class="status-ok">已确认</div>
+
+          <div class="name">红球</div>
+          <div>红色、圆球、可以搬动</div>
+          <div>盘子里面</div>
+          <div>它占用了盘子，必须先移走</div>
+          <div class="status-ok">已确认</div>
+
+          <div class="name">盘子</div>
+          <div>可以盛放球，位于桌面</div>
+          <div>桌面上</div>
+          <div>当前不空，暂时不能放入绿球</div>
+          <div class="status-ok">已确认</div>
+
+          <div class="name">黄箱</div>
+          <div>黄色、箱形、可以搬动</div>
+          <div>桌前正面区域</div>
+          <div>可能挡住正面路线；是否可绕行必须另做规划</div>
+          <div class="status-ok">位置已确认</div>
+
+          <div class="name">夹爪</div>
+          <div>机器人末端抓取工具</div>
+          <div>机器人上</div>
+          <div>当前为空，可以开始抓取物体</div>
+          <div class="status-ok">已确认</div>
+
+          <div class="name">安全状态</div>
+          <div>没有碰撞、急停或禁行提示</div>
+          <div>整个工作区域</div>
+          <div>允许继续检查和规划动作</div>
+          <div class="status-ok">已确认</div>
+        </div>
+
+        <div class="warning-note">
+          世界状态清单负责回答“黄箱在哪里”；路线准备处负责回答“从哪个方向走、哪条线会碰到它”。
+          把这两层混在一起，就会把某条路线失败误写成整个空间无路。
+        </div>
+
+        <div class="version-flow">
+          <div class="version-box"><b>第 1 版</b><span>红球在盘中，黄箱在桌前正面区域</span></div>
+          <div class="version-box"><b>第 31 版</b><span>黄箱已经在桌面，正面路线恢复</span></div>
+          <div class="version-box"><b>第 51 版</b><span>红球已经在地面，盘子清空</span></div>
+          <div class="version-box"><b>第 63 版</b><span>绿球已被夹爪抓住</span></div>
+          <div class="version-box"><b>第 74 版</b><span>绿球在盘中，夹爪重新为空</span></div>
+        </div>
+
+        <div class="plain-note">
+          为什么版本号会跳很多？因为除了物体移动，夹爪状态、任务进度、安全确认和新的观察依据发生有效变化时，
+          系统也会留下新一版记录。这样以后才能知道每个判断当时依据的是哪一个世界。
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-label">第五部分 · 理解任务</div>
+        <h2>系统怎样理解“把绿球放进空盘子”</h2>
+        <p class="lead">
+          系统不会听完一句话就直接控制机器人。它先把这句话改写成一张简单的任务说明书，
+          明确搬什么、放哪里、开始前要满足什么、怎样才算真的完成。
+        </p>
+
+        <div class="four-questions">
+          <div class="question">
+            <b>要搬什么</b>
+            <span>用户说的是“绿球”，不是所有球。</span>
+            <strong>本次实际：地面上的绿色圆球</strong>
+          </div>
+          <div class="question">
+            <b>要放到哪里</b>
+            <span>用户说的是“盘子”，不是桌面或地面。</span>
+            <strong>本次实际：桌面上的盘子</strong>
+          </div>
+          <div class="question">
+            <b>开始前有什么要求</b>
+            <span>“空盘子”说明放入前，盘子不能装着别的东西。</span>
+            <strong>本次实际：必须先移走红球</strong>
+          </div>
+          <div class="question">
+            <b>怎样算完成</b>
+            <span>不能只看“放下动作已发送”，必须看到球真的在盘中且夹爪已松开。</span>
+            <strong>本次实际：绿球在盘中，夹爪为空</strong>
+          </div>
+        </div>
+
+        <div class="task-sheet">
+          <h3>整理后得到的任务说明书</h3>
+          <div class="task-lines">
+            <div class="task-line"><b>目标物体</b><span>唯一的绿球</span></div>
+            <div class="task-line"><b>目标位置</b><span>盘子内部</span></div>
+            <div class="task-line"><b>开始条件</b><span>盘子必须为空</span></div>
+            <div class="task-line"><b>完成条件</b><span>绿球在盘中，并且夹爪没有再抓着它</span></div>
+          </div>
+        </div>
+
+        <div class="plain-note">
+          “空盘子”不是多余的形容词。它会变成真正的开始条件，所以系统一检查就会发现：
+          当前红球在盘子里，原任务还不能直接执行。
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-label">第六部分 · 找到具体对象</div>
+        <h2>系统怎样确定哪一个是绿球，哪一个是盘子</h2>
+        <p class="lead">
+          系统按照任务中的描述逐层缩小范围，而不是凭一句模糊印象随便挑一个物体。
+          找到对象后，还要用最新世界状态再次确认它们仍在原来的位置。
+        </p>
+
+        <div class="filter-flow">
+          <div class="filter-box"><b>现场所有物体</b><span>绿球、红球、盘子、黄箱、桌面、地面</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box"><b>只保留球</b><span>绿球、红球</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box"><b>只保留绿色</b><span>剩下一个绿色圆球</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box result"><b>找到目标物体</b><span>地面上的绿球</span></div>
+        </div>
+
+        <div class="filter-flow">
+          <div class="filter-box"><b>可以承载物体的位置</b><span>地面、桌面、盘子内部</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box"><b>只保留盘子</b><span>桌面上的盘子</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box"><b>检查当前占用</b><span>盘子里面看到了红球</span></div>
+          <div class="filter-arrow">→</div>
+          <div class="filter-box result" style="background:var(--red-soft);border-color:#c88c83;"><b>找到目标位置，但不能立刻使用</b><span>盘子不是空的</span></div>
+        </div>
+
+        <div class="decision">
+          <div class="decision-box">
+            <b>开始条件：盘子现在是空的吗？</b>
+            <span>系统查看第 1 版世界状态清单，并检查盘子内部。</span>
+          </div>
+          <div class="decision-arrow">→</div>
+          <div class="decision-box answer">
+            <b>不是</b>
+            <span>红球仍在盘子里。原任务暂停，先处理“清空盘子”。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="problem">
+      <div class="inner">
+        <div class="section-label">第七部分 · 第一层临时问题</div>
+        <h2>发现盘子里有红球：先清空盘子，再回来放绿球</h2>
+        <p class="lead">
+          系统不会放弃原任务，也不会把绿球硬塞进已经占用的盘子。
+          它会记住原任务停在“等待空盘子”，然后在前面插入一个临时任务：把红球移到地面。
+        </p>
+
+        <div class="nested-work">
+          <div class="work-main">
+            <b>原任务暂时等待：把绿球放进盘子</b>
+            <span>等待原因：盘子必须先变空</span>
+          </div>
+          <div class="work-line"></div>
+          <div class="work-repair">
+            <h3>第一层临时任务：把红球从盘子搬到地面</h3>
+            <div class="repair-flow">
+              <div class="repair-box"><b>找一个安全落点</b><span>在地面选择不会挡路、不会碰撞的位置</span></div>
+              <div class="repair-box"><b>接近并抓取红球</b><span>先规划到盘子的路线，再准备抓取</span></div>
+              <div class="repair-box"><b>放下并重新查看</b><span>确认红球在地面，而且盘子已经空了</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="before-after">
+          <div class="mini-scene">
+            <h3>处理前</h3>
+            <svg viewBox="0 0 650 330" role="img" aria-label="红球仍在盘子里">
+              <rect x="12" y="12" width="626" height="306" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="120" y="70" width="410" height="150" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <text x="284" y="101" fill="#504536" font-size="21" font-weight="700">桌面</text>
+              <ellipse cx="325" cy="165" rx="100" ry="38" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="325" cy="165" rx="70" ry="24" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="325" cy="151" r="27" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="225" y="270" fill="#923b35" font-size="23" font-weight="700">红球占着盘子</text>
+            </svg>
+          </div>
+          <div class="big-arrow">→</div>
+          <div class="mini-scene">
+            <h3>原本希望达到的结果</h3>
+            <svg viewBox="0 0 650 330" role="img" aria-label="红球移到地面，盘子变空">
+              <rect x="12" y="12" width="626" height="306" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="120" y="70" width="410" height="150" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <text x="284" y="101" fill="#504536" font-size="21" font-weight="700">桌面</text>
+              <ellipse cx="325" cy="165" rx="100" ry="38" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="325" cy="165" rx="70" ry="24" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="520" cy="268" r="27" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="183" y="270" fill="#2f7f53" font-size="23" font-weight="700">盘子变空，红球在地面</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="plain-note">
+          这里的关键不是“记住红球要搬走”这么简单。系统还要保存一个返回点：
+          红球搬走并确认盘子变空后，要自动回到原任务刚才暂停的位置继续。
+        </div>
+      </div>
+    </section>
+
+    <section class="uncertain">
+      <div class="inner">
+        <div class="section-label">第八部分 · 路线规划的关键区别</div>
+        <h2>黄箱挡住了正面候选，但没有堵死整个空间</h2>
+        <p class="lead">
+          规划时确实把黄箱放进了障碍地图。问题在于：系统当时只留下了桌前和斜前方的接近位置，
+          它们都与黄箱冲突；从桌子右侧绕到桌后的可用位置，在正式查路前就被过早排除了。
+        </p>
+
+        <div class="scene-layout">
+          <div class="scene">
+            <svg viewBox="0 0 1000 700" role="img" aria-label="正面候选失败但桌侧绕行可行">
+              <rect x="15" y="15" width="970" height="670" rx="5" fill="#eef2ef" stroke="#9baba1" stroke-width="3"/>
+              <text x="40" y="55" fill="#3d5548" font-size="23" font-weight="700">同一张障碍地图，两类接近方案得到不同结果</text>
+
+              <rect x="205" y="66" width="590" height="305" rx="5" fill="none" stroke="#c58a25" stroke-width="4" stroke-dasharray="12 9"/>
+              <text x="220" y="96" fill="#96610d" font-size="18" font-weight="700">生成接近位置时使用的保守区域过大</text>
+
+              <rect x="300" y="130" width="400" height="150" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <text x="464" y="163" fill="#504536" font-size="21" font-weight="700">桌面</text>
+              <ellipse cx="560" cy="214" rx="90" ry="33" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="560" cy="214" rx="63" ry="21" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="560" cy="202" r="24" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+
+              <rect x="220" y="280" width="105" height="280" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="675" y="280" width="105" height="280" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="455" y="438" width="90" height="82" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="5"/>
+              <text x="390" y="550" fill="#875b08" font-size="20" font-weight="700">黄箱在正面区域</text>
+
+              <circle cx="500" cy="398" r="24" fill="#fff0ed" stroke="#b64b3a" stroke-width="5"/>
+              <circle cx="400" cy="380" r="24" fill="#fff0ed" stroke="#b64b3a" stroke-width="5"/>
+              <line x1="484" y1="382" x2="516" y2="414" stroke="#b64b3a" stroke-width="7"/>
+              <line x1="516" y1="382" x2="484" y2="414" stroke="#b64b3a" stroke-width="7"/>
+              <line x1="384" y1="364" x2="416" y2="396" stroke="#b64b3a" stroke-width="7"/>
+              <line x1="416" y1="364" x2="384" y2="396" stroke="#b64b3a" stroke-width="7"/>
+              <path d="M500 625 L500 535 L500 422" fill="none" stroke="#b64b3a" stroke-width="8" stroke-dasharray="13 9"/>
+              <text x="335" y="340" fill="#a74335" font-size="19" font-weight="700">本次生成的正面候选：失败</text>
+
+              <path d="M500 625 C640 655 790 640 855 550 L855 205 C825 110 745 78 650 78 L620 78"
+                    fill="none" stroke="#2f7f53" stroke-width="9" stroke-dasharray="15 10"/>
+              <polygon points="608,78 632,65 632,91" fill="#2f7f53"/>
+              <circle cx="620" cy="78" r="25" fill="#edf7f1" stroke="#2f7f53" stroke-width="5"/>
+              <path d="M620 102 L572 180" fill="none" stroke="#2f7f53" stroke-width="6"/>
+              <polygon points="563,193 564,166 585,178" fill="#2f7f53"/>
+              <text x="510" y="122" fill="#246d39" font-size="19" font-weight="700">桌后位置：路线可达，机械臂可抓</text>
+              <text x="786" y="590" fill="#246d39" font-size="19" font-weight="700">从桌子右侧绕行</text>
+
+              <g transform="translate(500,625)">
+                <rect x="-46" y="-37" width="92" height="74" rx="5" fill="#2869a8" stroke="#174b78" stroke-width="4"/>
+                <circle cx="0" cy="-48" r="19" fill="#dcecff" stroke="#174b78" stroke-width="4"/>
+                <line x1="-19" y1="4" x2="-58" y2="-16" stroke="#174b78" stroke-width="9"/>
+                <line x1="19" y1="4" x2="58" y2="-16" stroke="#174b78" stroke-width="9"/>
+              </g>
+              <rect x="40" y="584" width="345" height="78" rx="4" fill="#edf7f1" stroke="#7faf91" stroke-width="2"/>
+              <text x="58" y="615" fill="#245d40" font-size="17" font-weight="700">复核：底盘能绕过去，停靠不碰撞；</text>
+              <text x="58" y="643" fill="#245d40" font-size="17" font-weight="700">桌后停稳后，机械臂也能抓取红球。</text>
+            </svg>
+          </div>
+
+          <div class="world-list">
+            <div class="world-row yellow">
+              <span class="object-mark box">图</span>
+              <div><b>规划考虑了黄箱</b><span>黄箱、桌子和两侧固定挡板都进入了障碍地图。</span></div>
+            </div>
+            <div class="world-row red">
+              <span class="object-mark ball-red">试</span>
+              <div><b>本次实际试了什么</b><span>通过抓取检查后，只剩桌前和斜前方两个位置。</span></div>
+            </div>
+            <div class="world-row red">
+              <span class="object-mark ball-red">败</span>
+              <div><b>这两个位置为什么失败</b><span>机器人停在那里会与黄箱冲突，所以正式路线搜索立即拒绝。</span></div>
+            </div>
+            <div class="world-row green">
+              <span class="object-mark ball-green">绕</span>
+              <div><b>遗漏的可行方案</b><span>先向右绕出正面区域，再沿桌子侧面到桌后接近红球。</span></div>
+            </div>
+            <div class="world-row teal">
+              <span class="object-mark grip">因</span>
+              <div><b>为什么会漏掉</b><span>系统把桌子周围圈得过大，桌后可用位置在查路线之前就被排除了。</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="warning-note">
+          正确说法是“本次生成的候选位置都失败了”，不是“所有安全路线都失败了”。
+          局部候选失败只能触发继续找位置或比较方案，不能直接证明必须搬走黄箱。
+        </div>
+
+        <h3 class="architecture-subtitle">完整规划应该按什么顺序判断</h3>
+        <div class="planning-flow">
+          <div class="planning-step"><b>一 · 建障碍地图</b><span>记录黄箱、桌子、挡板和机器人大小。</span></div>
+          <div class="planning-step"><b>二 · 四周找位置</b><span>桌前、左右侧、桌后都生成可停靠的接近位置。</span></div>
+          <div class="planning-step"><b>三 · 查底盘路线</b><span>逐个检查能否绕到该位置，而不只看正面直线。</span></div>
+          <div class="planning-step"><b>四 · 查抓取动作</b><span>确认停稳后机械臂够得到红球，且不会碰桌上物体。</span></div>
+          <div class="planning-step"><b>五 · 比较两类方案</b><span>比较绕行距离、碰撞风险，以及搬箱新增的抓放动作和环境变化。</span></div>
+          <div class="planning-step"><b>六 · 再作选择</b><span>只有绕行不合法或明显更差时，才考虑搬走黄箱。</span></div>
+        </div>
+
+        <div class="route-verdict-grid">
+          <div class="route-verdict">
+            <span class="route-tag">本次运行实际发生</span>
+            <h3>首批正面位置失败后，系统直接选择搬箱</h3>
+            <div class="route-fact"><b>看见了什么：</b>两个已生成位置都与黄箱冲突。</div>
+            <div class="route-fact"><b>随后做了什么：</b>暂停搬红球，自动插入“把黄箱搬到桌面”。</div>
+            <div class="route-fact"><b>应怎样理解：</b>这是一次成功完成任务的实际分支，但不是对全空间方案的完整比较。</div>
+          </div>
+          <div class="route-verdict complete">
+            <span class="route-tag">完整规划应得出的结论</span>
+            <h3>桌侧绕行是合法候选，必须进入比较</h3>
+            <div class="route-fact"><b>底盘：</b>可以从桌子右侧绕到桌后，不与黄箱、挡板或桌子碰撞。</div>
+            <div class="route-fact"><b>机械臂：</b>桌后稍偏右的位置可以安全接近并抓取红球。</div>
+            <div class="route-fact"><b>下一步：</b>比较绕行与搬箱的总距离、动作次数、风险和环境改动，再选择较合适的方案。</div>
+          </div>
+        </div>
+
+        <div class="nested-work">
+          <div class="work-main">
+            <b>原任务：把绿球放进盘子</b>
+            <span>等待盘子变空</span>
+          </div>
+          <div class="work-line"></div>
+          <div class="work-repair">
+            <h3>第一层临时任务：把红球搬到地面</h3>
+            <div class="repair-flow">
+              <div class="repair-box"><b>地面落点已选择</b><span>落点本身安全可用</span></div>
+              <div class="repair-box"><b>首批接近位置失败</b><span>两个正面位置都与黄箱冲突</span></div>
+              <div class="repair-box"><b>本次系统暂停</b><span>没有继续生成并比较桌侧方案</span></div>
+            </div>
+
+            <div class="work-line"></div>
+            <div class="work-repair second">
+              <h3>本次运行插入的第二层任务：把黄箱搬到桌面</h3>
+              <div class="repair-flow">
+                <div class="repair-box"><b>选择桌面空位</b><span>不压住盘子，也不妨碍后续放球</span></div>
+                <div class="repair-box"><b>抓取并搬运黄箱</b><span>执行本次运行选中的环境改动方案</span></div>
+                <div class="repair-box"><b>重新检查正面路线</b><span>黄箱离开后，再回去规划红球任务</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="return-strip">
+          <span>本次先完成黄箱</span><i>↑</i><span>回去完成红球</span><i>↑</i><span>最后回到绿球</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="inner">
+        <div class="section-label">第九部分 · 本次运行逐层返回</div>
+        <h2>本次运行选择先搬黄箱，再搬红球</h2>
+        <p class="lead">
+          下面展示的是实际记录走过的搬箱分支，而不是唯一正确路线。
+          每个临时任务仍按同一方式执行：查看当前世界、选落点和路线、执行动作，再用新观察确认结果。
+        </p>
+
+        <h3 style="margin-top:30px;">第一段：把黄箱搬到桌面</h3>
+        <div class="action-flow">
+          <div class="action-box"><b>查看黄箱和桌面</b><span>确认黄箱仍在桌前正面区域，桌面有安全空位</span></div>
+          <div class="action-box"><b>计算接近路线</b><span>保证机器人和夹爪能到达黄箱</span></div>
+          <div class="action-box"><b>抓住黄箱</b><span>夹爪状态从“空”变为“抓着黄箱”</span></div>
+          <div class="action-box"><b>搬到桌面</b><span>移动过程中持续检查通道和碰撞</span></div>
+          <div class="action-box"><b>松开夹爪</b><span>让黄箱稳定落在选定的桌面位置</span></div>
+          <div class="action-box"><b>重新观察</b><span>看到黄箱在桌面、夹爪为空、正面路线恢复</span></div>
+        </div>
+
+        <div class="before-after">
+          <div class="mini-scene">
+            <h3>黄箱处理前</h3>
+            <svg viewBox="0 0 650 350" role="img" aria-label="黄箱在桌前正面区域">
+              <rect x="12" y="12" width="626" height="326" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="108" y="62" width="434" height="105" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <rect x="192" y="180" width="78" height="135" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="380" y="180" width="78" height="135" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="294" y="220" width="64" height="60" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="4"/>
+              <text x="207" y="326" fill="#875b08" font-size="21" font-weight="700">正面短路被黄箱占住</text>
+            </svg>
+          </div>
+          <div class="big-arrow">→</div>
+          <div class="mini-scene">
+            <h3>黄箱处理后</h3>
+            <svg viewBox="0 0 650 350" role="img" aria-label="黄箱搬到桌面">
+              <rect x="12" y="12" width="626" height="326" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="108" y="62" width="434" height="105" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <rect x="148" y="88" width="70" height="58" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="4"/>
+              <rect x="192" y="180" width="78" height="135" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="380" y="180" width="78" height="135" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <path d="M325 305 L325 196" fill="none" stroke="#2f7f53" stroke-width="7" stroke-dasharray="11 8"/>
+              <polygon points="325,184 313,207 337,207" fill="#2f7f53"/>
+              <text x="212" y="326" fill="#2f7f53" font-size="21" font-weight="700">黄箱上桌，正面路线恢复</text>
+            </svg>
+          </div>
+        </div>
+
+        <h3 style="margin-top:34px;">第二段：回到红球，把盘子清空</h3>
+        <div class="action-flow">
+          <div class="action-box"><b>读取新的世界</b><span>黄箱位置已经改变，不能沿用处理前的旧路线</span></div>
+          <div class="action-box"><b>重新计算路线</b><span>确认现在可以安全到达盘子</span></div>
+          <div class="action-box"><b>抓住红球</b><span>观察确认红球已离开盘子并被夹爪抓住</span></div>
+          <div class="action-box"><b>搬到地面落点</b><span>使用之前选好的安全位置，并检查仍然可用</span></div>
+          <div class="action-box"><b>松开夹爪</b><span>让红球稳定落在地面</span></div>
+          <div class="action-box"><b>重新观察</b><span>红球在地面，盘子为空，第一层临时任务完成</span></div>
+        </div>
+
+        <div class="plain-note">
+          本次完整运行一共发送了 14 次实际动作。图中把它们合并成“接近、抓取、搬运、放下、观察”这些人容易理解的阶段，
+          但系统在每一段之间都进行了安全和状态检查。
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="inner">
+        <div class="section-label">第十部分 · 回到原任务</div>
+        <h2>盘子已经空了，系统重新抓取并搬运绿球</h2>
+        <p class="lead">
+          本次运行插入的两层临时任务完成后，系统回到最开始暂停的“把绿球放进盘子”。
+          因为黄箱和红球都换了位置，系统不会继续使用最早计算的路线，而是基于最新世界重新检查。
+        </p>
+
+        <div class="action-flow">
+          <div class="action-box"><b>再次检查开始条件</b><span>最新观察显示盘子内部已经没有红球</span></div>
+          <div class="action-box"><b>重新找到绿球</b><span>确认绿球仍在地面，没有被其他物体遮挡或移动</span></div>
+          <div class="action-box"><b>计算新路线</b><span>根据黄箱在桌面、红球在地面的新世界重新规划</span></div>
+          <div class="action-box"><b>抓起绿球</b><span>确认夹爪从“空”变为“抓着绿球”</span></div>
+          <div class="action-box"><b>搬到盘子上方</b><span>检查盘子位置、通道和放置落点仍然有效</span></div>
+          <div class="action-box"><b>松开并观察</b><span>让绿球落入盘中，再查看球和夹爪的实际状态</span></div>
+        </div>
+
+        <div class="before-after">
+          <div class="mini-scene">
+            <h3>开始主任务时</h3>
+            <svg viewBox="0 0 650 380" role="img" aria-label="盘子已空，绿球仍在地面">
+              <rect x="12" y="12" width="626" height="356" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="112" y="58" width="426" height="125" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <rect x="145" y="86" width="70" height="58" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="4"/>
+              <ellipse cx="405" cy="120" rx="90" ry="34" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="405" cy="120" rx="62" ry="21" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="135" cy="295" r="26" fill="#43a95e" stroke="#246d39" stroke-width="5"/>
+              <circle cx="515" cy="303" r="25" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="68" y="344" fill="#246d39" font-size="20" font-weight="700">绿球待搬</text>
+              <text x="345" y="210" fill="#2f7f53" font-size="20" font-weight="700">盘子已经空了</text>
+            </svg>
+          </div>
+          <div class="big-arrow">→</div>
+          <div class="mini-scene">
+            <h3>主任务完成后</h3>
+            <svg viewBox="0 0 650 380" role="img" aria-label="绿球在盘子里">
+              <rect x="12" y="12" width="626" height="356" rx="4" fill="#eef2ef" stroke="#9baba1" stroke-width="2"/>
+              <rect x="112" y="58" width="426" height="125" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <rect x="145" y="86" width="70" height="58" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="4"/>
+              <ellipse cx="405" cy="120" rx="90" ry="34" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="405" cy="120" rx="62" ry="21" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="405" cy="109" r="25" fill="#43a95e" stroke="#246d39" stroke-width="5"/>
+              <circle cx="515" cy="303" r="25" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="328" y="210" fill="#2f7f53" font-size="20" font-weight="700">绿球已经在盘中</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="plain-note">
+          旧路线为什么不能直接用？因为路线是根据“物体当时在哪里”算出来的。
+          现在黄箱和红球已经移动，哪怕环境变得更好，也必须重新确认，避免拿过期路线控制机器人。
+        </div>
+      </div>
+    </section>
+
+    <section class="world">
+      <div class="inner">
+        <div class="section-label">第十一部分 · 每次动作后的共同循环</div>
+        <h2>动作发出去以后，系统怎样确认并更新世界</h2>
+        <p class="lead">
+          “机器人说动作完成”不等于“世界已经按预期改变”。每次动作后，系统都会重新观察，
+          把预期结果和实际看到的结果逐项比较，再决定是否更新世界状态清单。
+        </p>
+
+        <div class="check-loop">
+          <div class="loop-box"><b>动作前留一份当前清单</b><span>明确这次动作是基于哪一版世界做出的</span></div>
+          <div class="loop-box"><b>说明想做什么</b><span>搬哪个物体、去哪里、预期夹爪和位置怎样变化</span></div>
+          <div class="loop-box"><b>执行一次动作</b><span>接近、抓取、移动或放下；同一动作不随意重复</span></div>
+          <div class="loop-box"><b>接收动作回报</b><span>回报只说明调用情况，不能单独作为世界事实</span></div>
+          <div class="loop-box"><b>重新观察现场</b><span>看物体实际位置、夹爪是否持有、是否安全</span></div>
+          <div class="loop-box"><b>比较预期和实际</b><span>一致就确认；不一致就说明原因；看不清就等待再查</span></div>
+          <div class="loop-box"><b>形成下一版世界</b><span>只改动已经确认变化的项目，并保留观察依据</span></div>
+        </div>
+
+        <div class="example-updates">
+          <div class="update-box">
+            <b>黄箱放到桌面后</b>
+            <span>看到黄箱稳定在桌面、夹爪为空，世界清单只更新为“黄箱在桌面”；路线随后另行重算。</span>
+          </div>
+          <div class="update-box">
+            <b>红球放到地面后</b>
+            <span>看到红球在地面、盘内没有红球，世界清单更新为“盘子为空”。</span>
+          </div>
+          <div class="update-box">
+            <b>绿球抓起后</b>
+            <span>看到绿球随夹爪移动，世界清单更新为“夹爪抓着绿球；绿球不再位于地面”。</span>
+          </div>
+          <div class="update-box">
+            <b>绿球放入盘中后</b>
+            <span>看到绿球在盘内且夹爪为空，世界清单更新为“绿球已放好并已释放”。</span>
+          </div>
+        </div>
+
+        <div class="snapshot-title">一次更新的通俗例子：把红球搬到地面</div>
+        <div class="snapshot-table">
+          <div class="head">检查项目</div>
+          <div class="head">动作前</div>
+          <div class="head">希望动作后变成</div>
+          <div class="head">重新观察到的结果</div>
+          <div class="head">是否写入</div>
+
+          <div class="name">红球位置</div>
+          <div>盘子里面</div>
+          <div>地面落点</div>
+          <div>红球稳定在地面</div>
+          <div class="status-ok">写入</div>
+
+          <div class="name">盘子占用</div>
+          <div>被红球占用</div>
+          <div>没有其他物体</div>
+          <div>盘内已经没有红球</div>
+          <div class="status-ok">写入</div>
+
+          <div class="name">夹爪状态</div>
+          <div>抓取前为空</div>
+          <div>放下后重新为空</div>
+          <div>没有抓着任何物体</div>
+          <div class="status-ok">写入</div>
+
+          <div class="name">安全状态</div>
+          <div>正常</div>
+          <div>仍然正常</div>
+          <div>没有碰撞或急停</div>
+          <div class="status-ok">写入</div>
+        </div>
+
+        <div class="plain-note">
+          清单更新遵守一个简单原则：动作请求是“打算改变什么”，新观察才是“世界实际上变成什么”。
+          如果看不清，就先保留“不确定”，不能为了让流程顺利而把希望当成事实。
+        </div>
+      </div>
+    </section>
+
+    <section class="uncertain">
+      <div class="inner">
+        <div class="section-label">第十二部分 · 最后一次动作没有正常回话</div>
+        <h2>放绿球时出现超时，系统为什么没有立刻再放一次</h2>
+        <p class="lead">
+          最后一次松开绿球的调用没有及时返回。超时只代表“系统没收到明确答复”，
+          不代表机器人一定没做，也不代表机器人一定做完。此时盲目重复最危险。
+        </p>
+
+        <div class="timeout-flow">
+          <div class="timeout-box"><b>发送放下动作</b><span>目标是让绿球落入盘中，并让夹爪重新为空</span></div>
+          <div class="timeout-box"><b>等待答复超时</b><span>没有得到干净的“完成”或“失败”回话</span></div>
+          <div class="timeout-box"><b>先停止重复</b><span>如果动作其实已经完成，再做一次可能撞球或扰乱现场</span></div>
+          <div class="timeout-box"><b>把结果标成待确认</b><span>保留“可能已做、也可能没做”两种可能</span></div>
+          <div class="timeout-box"><b>重新观察现场</b><span>看到绿球已经在盘子里，同时夹爪已经为空</span></div>
+          <div class="timeout-box"><b>按事实收尾</b><span>确认放下确实发生，更新最终世界，不再重放动作</span></div>
+        </div>
+
+        <div class="decision">
+          <div class="decision-box">
+            <b>超时等于动作失败吗？</b>
+            <span>超时描述的是“没有收到答复”，并没有描述现场结果。</span>
+          </div>
+          <div class="decision-arrow">→</div>
+          <div class="decision-box answer" style="background:var(--green-soft);border-color:var(--green);color:#245d40;">
+            <b>不等于</b>
+            <span>本次重新观察证明：绿球已在盘中，夹爪已松开，动作实际完成。</span>
+          </div>
+        </div>
+
+        <div class="warning-note">
+          为什么不能简单重试：如果绿球已经落盘，再重复“放下”可能没有意义；
+          更糟的是，重复的移动或抓取准备可能碰到已经放好的球。正确做法是先重新看世界，再决定下一步。
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="inner">
+        <div class="section-label">第十三部分 · 最终世界和成功依据</div>
+        <h2>系统最后确认的世界是什么样</h2>
+        <p class="lead">
+          成功不是因为最后一个动作“返回成功”，而是因为系统在新的世界状态中逐项检查，
+          看到原目标、本次运行插入的两个临时任务结果、夹爪状态和安全状态全部成立。
+        </p>
+
+        <div class="success-grid">
+          <div class="scene">
+            <svg viewBox="0 0 1000 690" role="img" aria-label="绿球任务最终现场">
+              <rect x="15" y="15" width="970" height="660" rx="5" fill="#eef5f1" stroke="#91aa9b" stroke-width="3"/>
+              <text x="40" y="56" fill="#345747" font-size="24" font-weight="700">最终现场：绿球入盘，红球落地，黄箱上桌</text>
+
+              <rect x="270" y="225" width="116" height="310" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+              <rect x="614" y="225" width="116" height="310" fill="#a5afb5" stroke="#5d6972" stroke-width="3"/>
+
+              <rect x="305" y="78" width="390" height="150" rx="4" fill="#d4c2a6" stroke="#79684f" stroke-width="4"/>
+              <text x="466" y="109" fill="#504536" font-size="22" font-weight="700">桌面</text>
+
+              <rect x="335" y="130" width="86" height="66" rx="4" fill="#e3aa30" stroke="#946509" stroke-width="5"/>
+              <text x="305" y="253" fill="#875b08" font-size="20" font-weight="700">黄箱已经搬到桌面</text>
+
+              <ellipse cx="570" cy="167" rx="93" ry="36" fill="#f8fafb" stroke="#607482" stroke-width="6"/>
+              <ellipse cx="570" cy="167" rx="67" ry="23" fill="#dfe8ec" stroke="#8999a3" stroke-width="2"/>
+              <circle cx="570" cy="155" r="25" fill="#43a95e" stroke="#246d39" stroke-width="5"/>
+              <text x="710" y="160" fill="#246d39" font-size="21" font-weight="700">绿球在盘子里</text>
+
+              <circle cx="218" cy="585" r="27" fill="#d45249" stroke="#85322d" stroke-width="5"/>
+              <text x="105" y="635" fill="#923b35" font-size="21" font-weight="700">红球在地面</text>
+
+              <g transform="translate(810,585)">
+                <rect x="-46" y="-37" width="92" height="74" rx="5" fill="#2869a8" stroke="#174b78" stroke-width="4"/>
+                <circle cx="0" cy="-48" r="19" fill="#dcecff" stroke="#174b78" stroke-width="4"/>
+                <line x1="-19" y1="4" x2="-58" y2="-16" stroke="#174b78" stroke-width="9"/>
+                <line x1="19" y1="4" x2="58" y2="-16" stroke="#174b78" stroke-width="9"/>
+              </g>
+              <text x="715" y="650" fill="#174f7d" font-size="21" font-weight="700">夹爪已经为空</text>
+
+              <path d="M790 520 C690 455 608 390 525 322" fill="none" stroke="#2f7f53" stroke-width="7" stroke-dasharray="13 10"/>
+              <polygon points="516,314 540,321 523,339" fill="#2f7f53"/>
+              <text x="545" y="420" fill="#2f7f53" font-size="20" font-weight="700">本次采用的正面路线可以通行</text>
+            </svg>
+          </div>
+
+          <div class="success-checks">
+            <div class="success-check"><i>✓</i><div><b>主目标成立</b><span>绿球确实位于盘子内部。</span></div></div>
+            <div class="success-check"><i>✓</i><div><b>绿球已经释放</b><span>夹爪为空，没有继续抓着绿球。</span></div></div>
+            <div class="success-check"><i>✓</i><div><b>盘子清空任务完成</b><span>红球已经在地面，不再占用盘子。</span></div></div>
+            <div class="success-check"><i>✓</i><div><b>本次搬箱任务完成</b><span>黄箱已经在桌面，随后重算的正面路线可以使用。</span></div></div>
+            <div class="success-check"><i>✓</i><div><b>超时结果已经查清</b><span>新观察证明最后一次放下动作实际发生。</span></div></div>
+            <div class="success-check"><i>✓</i><div><b>安全状态正常</b><span>没有遗留碰撞、急停或未处理的危险。</span></div></div>
+          </div>
+        </div>
+
+        <div class="compare-worlds">
+          <div class="compare-list">
+            <h3>第 1 版世界状态</h3>
+            <p>绿球在地面</p>
+            <p>红球在盘子里</p>
+            <p>盘子被占用</p>
+            <p>黄箱在桌前正面区域</p>
+            <p>夹爪为空</p>
+          </div>
+          <div class="big-arrow">→</div>
+          <div class="compare-list after">
+            <h3>第 74 版世界状态</h3>
+            <p>绿球在盘子里</p>
+            <p>红球在地面</p>
+            <p>盘子装着目标绿球</p>
+            <p>黄箱在桌面</p>
+            <p>夹爪为空</p>
+          </div>
+        </div>
+
+        <div class="plain-note">
+          最终判断只问一个问题：“现在的世界是否满足用户真正想要的结果？”
+          本次答案是肯定的，所以整棵任务流程才在第 74 版世界状态上结束。
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="inner footer-grid">
+        <div>
+          <h3>这张图想说明的核心</h3>
+          <p>系统不是先写死全部动作再一路执行，而是持续读取世界、检查条件、处理阻碍、重新规划、执行一次并再次观察。</p>
+          <p>候选路线失败不等于整个空间无路；必须覆盖桌前、左右侧和桌后，并比较绕行与改变环境两类方案。</p>
+        </div>
+        <div>
+          <h3>本图依据</h3>
+          <p>根据本机“绿球放入空盘子”的真实完整运行记录整理。</p>
+          <p>完整用时 4 分 32 秒，共进行 470 次系统检查、14 次实际动作；桌侧绕行结论另由同一初始场景复核确认。</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
