@@ -1,0 +1,15 @@
+{
+  "title": "Harness 标准任务全流程",
+  "duration_seconds": 26.033333,
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "video_codec": "H.264",
+  "audio_codec": "AAC",
+  "bytes": 8972153,
+  "sha256": "0987d8a57985e305dc9920fdc63631e5f0a3889c0db29e8260c89f46c58dd1ca",
+  "file": "harness-workflow.mp4",
+  "source": "User-supplied demonstration recording",
+  "preview": "harness-workflow-preview.gif",
+  "poster": "harness-workflow-poster.jpg"
+}

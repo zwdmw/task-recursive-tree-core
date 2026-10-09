@@ -8,9 +8,14 @@ version = "0.1.0"
 description = "A reference recursive task-tree runtime for mobile manipulation."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
-authors = [{name = "Task Recursive Tree"}]
+license = {file = "LICENSE"}
+authors = [{name = "zwdmw"}]
 dependencies = []
+
+[project.urls]
+Repository = "https://github.com/zwdmw/task-recursive-tree-core"
+Issues = "https://github.com/zwdmw/task-recursive-tree-core/issues"
+Demo = "https://zwdmw.github.io/task-recursive-tree-core/"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
@@ -21,6 +26,7 @@ trt-server = "task_recursive_tree.web.server:main"
 trt-gemini-er2-server = "task_recursive_tree.integrations.gemini_er2.server:main"
 
 [tool.setuptools]
+license-files = ["LICENSE", "NOTICE.md"]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]

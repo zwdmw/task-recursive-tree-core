@@ -1,269 +1,116 @@
-# Task Recursive Tree
+# Task Recursive Tree · 任务递归树
 
-A runnable reference architecture for mobile-manipulation tasks. It separates
-task decisions, spatial grounding, planning, physical execution, observation,
-and verification so that recovery remains explicit in the task tree.
+[English](README.en.md) · [观看演示](https://zwdmw.github.io/task-recursive-tree-core/) · [架构详解](ARCHITECTURE.md) · [参与贡献](CONTRIBUTING.md)
 
-## GeminiER2 Runtime
+面向移动操作任务的递归任务树运行时。它把任务意图、空间定位、规划、物理执行、观察与验证连接起来，并将失败后的恢复过程展开为可检查的任务树。
 
-The default Windows launcher now runs the GeminiER2 MuJoCo experience through
-the new kernel:
+## 效果视频
 
-```text
-Harness natural-language planner
-  -> HarnessTaskProgramPlannerAdapter
-       -> canonical TaskProgram artifact
-  -> KernelCompilerBridge
-  -> TaskTreeStore
-  -> TaskTreeKernel
-  -> GeminiER2 system operations / physical gateway
-  -> MuJoCo
+[![任务递归树与 GeminiER2Harness 的标准任务全流程演示，点击观看 1080p 视频](docs/media/harness-workflow-preview.gif)](https://zwdmw.github.io/task-recursive-tree-core/)
+
+**[在线播放完整视频](https://zwdmw.github.io/task-recursive-tree-core/)** · [下载 MP4](https://github.com/zwdmw/task-recursive-tree-core/releases/download/v0.1.0/harness-workflow.mp4) · [仓库中的视频文件](docs/media/harness-workflow.mp4)
+
+26 秒 · 1920 × 1080 · H.264 / AAC。视频展示 GeminiER2Harness + MuJoCo 集成环境中的任务提交、任务树执行和机器人操作，原始 MP4 随仓库保存。
+
+## 从这里开始
+
+| 想做什么 | 入口 |
+| --- | --- |
+| 先看运行效果 | [视频播放页](https://zwdmw.github.io/task-recursive-tree-core/) |
+| 运行核心任务树与递归恢复演示 | 下方快速开始；Python 3.11+ |
+| 查看任务树、事件和物理事务记录 | CLI JSON 输出与 `trt-server` 浏览器控制台 |
+| 了解 GeminiER2 / MuJoCo 接入 | [集成运行说明](docs/INTEGRATION.md) |
+| 了解设计和完整契约 | [ARCHITECTURE](ARCHITECTURE.md)、[原始运行参考](docs/runtime-reference.md) |
+
+## 快速开始
+
+核心演示使用仓库内的确定性平面机器人后端，安装后即可执行。
+
+```bash
+git clone https://github.com/zwdmw/task-recursive-tree-core.git
+cd task-recursive-tree-core
+python -m venv .venv
 ```
 
-`TaskTreeStore` is the only live tree state. Harness task trees are accepted as
-compile-time or recovery DTOs and are translated before execution. The Harness
-runtime remains responsible for the world model, perception, tools, physical
-transactions, MuJoCo, recording, and the browser console.
+激活虚拟环境：
 
-The main executor factory and the continuous-session recovery executor factory
-both use `KernelExecutorBridge`. The legacy Harness executor is not
-instantiated or called.
-
-## Run
-
-The GeminiER2 integration requires Python 3.11 or newer plus a working
-GeminiER2Harness installation. The Windows launcher selects the first Python
-from this project's `.venv`, `D:\GeminiER2Harness\.venv`, or the system
-launcher that also provides Faster-Whisper and OpenCC.
-
-On Windows, double-click `启动任务递归树.cmd`. It starts a persistent local
-server, opens the browser control console, and enables local realtime voice
-control by default. Click `Start Listening` once to grant microphone access;
-the browser prefers a Realtek input when available. Spoken tasks are
-transcribed locally with Faster-Whisper, while stop, pause, continue,
-clarification, text input, and scene controls use the same persistent session.
-Each submitted task gets a fresh explicit tree while the observed world,
-robot backend, and transaction ledger continue from their current state.
+```bash
+# Linux / macOS
+source .venv/bin/activate
+```
 
 ```powershell
-.\启动任务递归树.cmd
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
 ```
 
-The console defaults to `http://127.0.0.1:8766/`. The launcher cleans up its
-previous server instance, forwards server arguments, and accepts options such
-as `--no-browser`, `--port`, `--out`, `--scene`, `--scene-seed`,
-`--template-seed`, `--voice-model`, and `--harness-root`.
+安装并运行：
 
-Run the persistent server without the launcher:
-
-```powershell
-$env:PYTHONPATH = "src"
-python -m task_recursive_tree.integrations.gemini_er2.server --no-browser
+```bash
+python -m pip install -e .
+trt-demo --tree-output .artifacts/demo.json
+trt-demo --blocked --tree-output .artifacts/blocked.json
 ```
 
-Run the original one-shot CLI demo:
+两次演示分别展示正常任务执行和加入可移动障碍后的递归恢复，终端会打印任务树和执行状态。JSON 包含树节点、事件及执行栈，方便检查每一步的决策。
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m task_recursive_tree --tree-output .artifacts\demo.json
-python -m task_recursive_tree --blocked --tree-output .artifacts\blocked.json
+打开核心运行时的浏览器控制台：
+
+```bash
+trt-server --no-browser
 ```
 
-Run the test suite:
+在浏览器访问终端打印的地址，默认是 `http://127.0.0.1:8770/`。`Ctrl+C` 关闭服务。
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m pytest
+## 架构总览
+
+```mermaid
+flowchart TD
+    P[TaskProgram · 任务意图] --> S[空间选择与绑定]
+    S --> C[TaskCompiler · 编译任务树]
+    C --> T[TaskTreeStore · 权威树状态]
+    K[TaskTreeKernel · 调度与递归恢复] --> T
+    T --> I[Inspector · 树与事件检查]
+    K --> O[Operations · 领域操作]
+    O --> A[规划产物 / ActionRequest]
+    A --> H[HarnessRuntime · 物理事务]
+    H --> B[RobotBackend · 执行动作]
+    B --> W[Observation → WorldModel]
+    W --> V[Verifier · 检验目标]
+    V --> K
 ```
 
-## Architecture
+`TaskTreeStore` 保存权威任务树状态，`TaskTreeKernel` 调度节点与恢复逻辑。规划输出不可变产物，物理请求进入带有 SQLite WAL 记录的串行执行器；执行后重新观察世界，再由验证器检查目标是否达成。持续会话为每个新任务创建树，并保留当前世界、后端和事务记录。
 
-```text
-TaskProgram (LLM-safe intent IR)
-    |
-    v
-SpatialSelectorEngine ---> BindingArtifact
-    |
-    v
-TaskCompiler ---> TaskTreeStore <--- TaskTreeInspector
-                     ^
-                     | sole writer
-               TaskTreeKernel
-                 /       \
-        Decomposers       Operations
-                            |
-             +--------------+--------------+
-             |                             |
-      Domain capabilities             Physical skills
-       A* / IK / RRT                        |
-             |                         ActionRequest
-             v                             |
-      immutable plan artifacts         HarnessRuntime
-                                           ^
-                               canonical PhysicalEffect
-                              + serialized EffectRunner
-                              + SQLite WAL journal
-                              + artifacts directory lock
-                                           |
-                        freshness + guards + leases + transaction
-                                           |
-                                      RobotBackend
-                                           |
-                                       Observation
-                                           |
-                                       WorldModel
-                                           |
-                                   independent Verifier
+## 测试与开发
+
+```bash
+python -m pip install -e '.[dev]'
+python scripts/check_core.py
 ```
 
-The persistent operator path wraps, but does not bypass, this flow:
+检查运行正常 / 障碍演示，并执行核心测试集。GeminiER2 适配器测试使用另一组命令，所需 Harness 环境与说明见[集成运行说明](docs/INTEGRATION.md)。
 
-```text
-Browser Console -> HTTP Adapter -> ContinuousTaskSession -> TaskProgram
-                                      |
-                                       +-> Planner Adapter / Canonicalizer
-                                       +-> fresh Kernel / Store per task
-                                       +-> shared World / Harness / Backend
-                                       `-> shared EffectRunner / journal
-```
-
-The dependency direction is intentional:
-
-- The tree decides what happens next.
-- Domain capabilities generate operation-level plans.
-- A*, IK, and RRT are implementation details, never task-tree nodes.
-- Physical skills only translate artifacts into typed action requests.
-- Only `HarnessRuntime` invokes the robot backend.
-- Planners and predicates read `WorldSnapshot`; neither reads backend state.
-- Verifiers do not call planners, skills, controllers, or the backend.
-- An LLM may emit `TaskProgram`; it cannot emit or mutate runtime tree state.
-- Planner output is canonicalized before `task_program.json` is persisted.
-  The compiler repeats the same check for compatibility with older artifacts;
-  unknown, conflicting, misplaced, and destination quantifiers fail closed.
-- Decomposers and repair resolvers return typed `GraphDelta` values.
-- `TaskTreeKernel` owns an unforgeable writer capability for `TaskTreeStore`.
-- Failed Store mutations restore specs, runtimes, edges, stack, and events.
-- Kernel validation rejects unmounted, unreachable, or escaping graph deltas.
-- Physical requests carry a canonical payload hash and an explicit attempt
-  ledger before dispatch.
-- The continuous session persists request states in
-  `<artifacts_dir>/physical-effects.sqlite3`; a completed or unresolved request
-  is not physically dispatched again after restart.
-- Persisted physical results are reconciliation evidence, not a substitute for
-  restoring the task tree or re-verifying the observed goal.
-- Each extension receives a role-specific context; skills cannot access runtime
-  or a robot backend.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts and extension rules, and
-[the engine evolution roadmap](docs/ENGINE_EVOLUTION_ROADMAP.zh-CN.md) for the
-staged refactoring plan.
-
-## Reference Place Tree
-
-```text
-Place
-|- ResolveAndInspect
-|- PlanPick
-|- PlanTransfer
-|- Pick
-|  |- NavigateToPickStance
-|  |- ExecuteGrasp
-|  `- VerifyHeld
-|- TransferHeld
-|  |- MoveToTransportPosture
-|  |- NavigateHeld
-|  `- VerifyPlacementReady
-|- Release
-|  |- ExecuteRelease
-|  `- VerifyReleased
-`- VerifyPlaceGoal
-```
-
-Planning the transfer before grasping detects route failures while the gripper
-is still empty. A blocker is accepted only when counterfactual A* proves that
-removing that exact obstacle restores a route. The kernel mounts a
-`RouteBlockedRepair` subtree that recursively places the blocker in a parking
-region and refreshes the dependent pick plan before retrying. If a new obstacle
-appears while an object is already held, repair replans the transfer instead of
-trying to grasp a second object.
-
-## Package Map
+## 项目结构
 
 ```text
 src/task_recursive_tree/
-  core/          shared diagnostics and predicate contracts
-  artifacts/     immutable plans, metadata, aliases, and artifact storage
-  task/          IR, compiler, node model, store, kernel, decomposers, repair
-  selection/     semantic spatial selectors and grounding
-  world/         snapshots, geometry, observations, predicates
-  capabilities/  A*, IK, RRT, navigation, pick, and transfer planning
-  runtime/       immutable artifacts, freshness, leases, transactions, harness
-  skills/        plan-to-ActionRequest translation
-  robot/         model, controller/MPC port, backend port, simulation backend
-  adapters/      compatibility boundary for imperative callers
-  session/       serialized multi-task session over one live physical runtime
-  web/           local HTTP adapter and browser operator console
+  core/          通用类型与共享模型
+  task/          任务意图、节点、编译与调度
+  selection/     空间选择与绑定
+  capabilities/  A* / IK / RRT 规划
+  robot/         参考机器人后端与控制器
+  world/         观测、空间关系和世界状态
+  runtime/       物理执行、事务与恢复
+  web/           核心浏览器控制台
+  integrations/  GeminiER2Harness 适配器
+scripts/         检查与文档工具
+tests/           核心与集成测试
+docs/media/      原始效果视频、GIF 与预览图
 ```
 
-## Safety Model
+实际模块目录和职责见[架构文档](ARCHITECTURE.md)。
 
-- Navigation plans carry their clearance radius and ignored-entity set through
-  to backend execution.
-- GeminiER2 detour paths are accepted only through declared producer/consumer
-  contracts, a frozen dispatch snapshot, and the active route-safety policy
-  fingerprint. Execution blockage invalidates the consumed path before repair.
-- GeminiER2 base motion uses a shared `5 mm / 0.5 deg` continuous sweep policy
-  for A* result validation and physical route revalidation.
-- Physical dispatch uses the Harness-owned executor registry and canonical
-  `execute_physical(request, allowed=None)` contract; an integration test checks
-  the installed Harness signature to catch interface drift.
-- Harness-marked `system_only` physical actions use the trusted
-  `execute_system_physical(request)` entrypoint rather than the ordinary model
-  action path.
-- Pick plans depend on the observed arm configuration; every arm path must
-  start continuously from the current joints.
-- RRT and joint controllers validate interpolated edges, not only path
-  waypoints.
-- Transfer plans use a folded transport posture and a held-object envelope.
-- Occupancy fingerprints invalidate plans when obstacles are added, removed, or
-  moved, while allowing the explicitly ignored payload to move.
-- Grasp and release use three-dimensional distance. Optional destination yaw
-  tolerance is checked by planning, execution, and final verification.
-- The harness observes after every physical command. Rollback-capable
-  simulators restore and reconcile; real backends reconcile observed state
-  without pretending physical motion can be undone.
-- Cancellation is directly retryable only with certified no-side-effect,
-  closed-transaction, and quiescence evidence; otherwise it is reconciled as
-  `OUTCOME_UNKNOWN`.
-- Physical requests are executed from a validated snapshot. Their durable
-  identity uses type-aware canonical hashing rather than object `repr()`, and
-  the journal persists the hash schema so pending rows can be migrated
-  explicitly.
-- Runtime-side freshness, guard, and lease rejection carries certified
-  pre-dispatch evidence. The runner returns those rows to `pending`; exceptions
-  without such evidence remain `OUTCOME_UNKNOWN`.
-- Reconciliation closes the matching kernel attempt as
-  `reconciled_succeeded` or `reconciled_refuted`, while preserving the original
-  durable journal evidence and request history.
-- One active `ContinuousTaskSession` owns an artifacts directory through an
-  advisory process lock. Only a new exclusive owner may recover inherited
-  `dispatching` rows as `outcome_unknown`; a live runner never does so.
-- Entity freshness includes a generation so disappearance and reappearance
-  cannot reuse the same dependency version.
+## 许可
 
-## Reference Scope
-
-This repository is a reference modular monolith. `TaskTreeStore` is an
-in-memory authoritative store with an explicit serializable stack and atomic
-in-process mutations with rollback. The SQLite WAL physical journal is durable
-and prevents duplicate dispatch for the same request ID and hash, but JSON tree
-exports are still inspection snapshots rather than a complete restart
-protocol. One artifacts directory enforces one active dispatcher with a local
-advisory process lock. A production deployment should retain that ownership
-rule, add owner-token compare-and-swap or leases for distributed dispatchers,
-implement the same store contract with SQLite/PostgreSQL/event-log durability,
-and persist artifacts in the same transaction boundary as the physical outbox.
-
-The included robot is a deterministic planar two-link simulation. A real robot
-adapter should preserve `ActionRequest`, observation, guard, and reconciliation
-contracts while delegating trajectory tracking to its IK/MPC/controller stack.
+本项目采用 [MIT License](LICENSE)，版权所有 © 2026 zwdmw。集成环境中的 GeminiER2Harness、MuJoCo、语音模型及其他外部组件按各自许可使用；外部依赖与项目关系见 [NOTICE](NOTICE.md)。

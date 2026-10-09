@@ -16,3 +16,14 @@ docs/whitepaper-rendered-*/
 .vscode/
 .idea/
 *.log
+
+# Personal diagnostics and service credentials
+.learnings/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Extra isolated environments
+.venv*/
